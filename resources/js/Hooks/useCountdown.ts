@@ -28,4 +28,40 @@ export function useCountdown(targetDate: string | null) {
     return timeLeft;
 }
 
+export function useRemainingTime(startTime: string | null, durationMinutes: number | null) {
+    const [remaining, setRemaining] = useState<number>(0);
+    const [isExpired, setIsExpired] = useState(false);
+
+    useEffect(() => {
+        if (!startTime || !durationMinutes) {
+            setRemaining(0);
+            setIsExpired(true);
+            return;
+        }
+
+        const end = new Date(startTime).getTime() + durationMinutes * 60 * 1000;
+
+        const update = () => {
+            const diff = end - Date.now();
+            if (diff <= 0) {
+                setRemaining(0);
+                setIsExpired(true);
+            } else {
+                setRemaining(Math.floor(diff / 1000));
+                setIsExpired(false);
+            }
+        };
+
+        update();
+        const timer = setInterval(update, 1000);
+        return () => clearInterval(timer);
+    }, [startTime, durationMinutes]);
+
+    const hours = Math.floor(remaining / 3600);
+    const minutes = Math.floor((remaining % 3600) / 60);
+    const seconds = remaining % 60;
+
+    return { remaining, isExpired, hours, minutes, seconds };
+}
+
 export default useCountdown;
