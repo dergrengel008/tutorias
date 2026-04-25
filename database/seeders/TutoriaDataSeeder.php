@@ -4,576 +4,461 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\TutorProfile;
 use App\Models\StudentProfile;
+use App\Models\Specialty;
+use App\Models\TutorCourse;
 use App\Models\TutoringSession;
 use App\Models\Review;
 use App\Models\Token;
-use App\Models\Notification;
-use App\Models\Specialty;
-use App\Models\TutorCourse;
-use App\Models\PaymentReceipt;
-use App\Models\SessionMessage;
-use App\Models\Conversation;
-use App\Models\Message;
-use App\Models\TutorAvailability;
+use Carbon\Carbon;
 
 class TutoriaDataSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     *
+     * Creates test data for the TutoriaApp platform:
+     * - 3 approved tutors (with TutorProfile, specialties, courses)
+     * - 5 students (with StudentProfile)
+     * - 3 tutoring sessions (completed, in_progress, scheduled)
+     * - 10 reviews across tutors
+     * - Initial token balances for all users
+     */
     public function run(): void
     {
-        $now = now();
-        $password = Hash::make('password');
+        // ─── Get specialties ────────────────────────────────────────
+        $math     = Specialty::where('name', 'Matemáticas')->first();
+        $physics  = Specialty::where('name', 'Física')->first();
+        $prog     = Specialty::where('name', 'Programación')->first();
+        $english  = Specialty::where('name', 'Inglés')->first();
+        $chem     = Specialty::where('name', 'Química')->first();
 
-        // ═══════════════════════════════════════
-        // TUTORES (6)
-        // ═══════════════════════════════════════
-        $tutorsData = [
+        if (! $math || ! $physics || ! $prog) {
+            $this->command->warn('Las especialidades base no existen. Ejecuta SpecialtySeeder primero.');
+            return;
+        }
+
+        // ─── Create Tutors ──────────────────────────────────────────
+        $tutors = [
             [
-                'name' => 'Prof. María García',
-                'email' => 'maria.garcia@tutoria.com',
-                'phone' => '+58 412-1234567',
-                'city' => 'Caracas',
-                'country' => 'Venezuela',
-                'bio' => 'Matemática con más de 10 años de experiencia. Especialista en cálculo y álgebra lineal.',
-                'professional_title' => 'Magíster en Matemáticas Puras',
-                'education_level' => 'Maestria',
-                'years_experience' => 12,
-                'hourly_rate' => 15.00,
-                'specialties' => ['Matemáticas', 'Física'],
-                'courses' => [
-                    ['title' => 'Cálculo Diferencial', 'description' => 'Curso completo de derivadas y límites', 'institution' => 'UCV', 'year' => 2020],
-                    ['title' => 'Álgebra Lineal Aplicada', 'description' => 'Matrices, transformaciones y espacios vectoriales', 'institution' => 'USB', 'year' => 2021],
-                ],
-            ],
-            [
-                'name' => 'Ing. Carlos Rodríguez',
+                'name'  => 'Carlos Andrés Rodríguez',
                 'email' => 'carlos.rodriguez@tutoria.com',
-                'phone' => '+58 414-9876543',
-                'city' => 'Maracaibo',
+                'phone' => '+58 412-1234567',
+                'city'  => 'Caracas',
                 'country' => 'Venezuela',
-                'bio' => 'Ingeniero de sistemas con pasión por la programación. Full-stack developer.',
-                'professional_title' => 'Ingeniero de Sistemas',
-                'education_level' => 'Pregrado',
+                'bio' => 'Profesor universitario de matemáticas con más de 8 años de experiencia. Especialista en cálculo y álgebra lineal.',
+                'professional_title' => 'Licenciado en Matemáticas',
+                'education_level' => 'Universitario',
                 'years_experience' => 8,
-                'hourly_rate' => 20.00,
-                'specialties' => ['Programación', 'Ingeniería'],
-                'courses' => [
-                    ['title' => 'React desde Cero', 'description' => 'Aprende React con proyectos prácticos', 'institution' => 'ULA', 'year' => 2023],
-                    ['title' => 'Base de Datos SQL y NoSQL', 'description' => 'PostgreSQL, MySQL, MongoDB', 'institution' => 'LUZ', 'year' => 2022],
-                    ['title' => 'APIs RESTful con Laravel', 'description' => 'Diseño y desarrollo de APIs profesionales', 'institution' => 'UDO', 'year' => 2023],
-                ],
-            ],
-            [
-                'name' => 'Lic. Ana Martínez',
-                'email' => 'ana.martinez@tutoria.com',
-                'phone' => '+58 416-5551234',
-                'city' => 'Valencia',
-                'country' => 'Venezuela',
-                'bio' => 'Licenciada en idiomas ingleses. Certificada TOEFL iBT y IELTS.',
-                'professional_title' => 'Licenciada en Idiomas Modernos',
-                'education_level' => 'Pregrado',
-                'years_experience' => 6,
-                'hourly_rate' => 12.00,
-                'specialties' => ['Inglés', 'Francés'],
-                'courses' => [
-                    ['title' => 'Preparación TOEFL', 'description' => 'Estrategias y práctica para el examen TOEFL iBT', 'institution' => 'UC', 'year' => 2022],
-                ],
-            ],
-            [
-                'name' => 'Dr. José Hernández',
-                'email' => 'jose.hernandez@tutoria.com',
-                'phone' => '+58 424-7778899',
-                'city' => 'Caracas',
-                'country' => 'Venezuela',
-                'bio' => 'Doctor en química con experiencia en investigación y docencia universitaria.',
-                'professional_title' => 'Doctor en Química',
-                'education_level' => 'Doctorado',
-                'years_experience' => 15,
                 'hourly_rate' => 25.00,
-                'specialties' => ['Química', 'Biología'],
-                'courses' => [
-                    ['title' => 'Química Orgánica Avanzada', 'description' => 'Mecanismos de reacción y síntesis', 'institution' => 'IVIC', 'year' => 2019],
-                    ['title' => 'Bioquímica Molecular', 'description' => 'Proteínas, enzimas y metabolismo', 'institution' => 'UCV', 'year' => 2020],
-                ],
             ],
             [
-                'name' => 'Prof. Laura López',
-                'email' => 'laura.lopez@tutoria.com',
-                'phone' => '+58 412-3334455',
-                'city' => 'Barquisimeto',
+                'name'  => 'María Gabriela Fernández',
+                'email' => 'maria.fernandez@tutoria.com',
+                'phone' => '+58 414-7654321',
+                'city'  => 'Maracaibo',
                 'country' => 'Venezuela',
-                'bio' => 'Abogada y profesora universitaria. Especialista en derecho constitucional.',
-                'professional_title' => 'Abogada - Especialista en Derecho Constitucional',
-                'education_level' => 'Especializacion',
-                'years_experience' => 9,
-                'hourly_rate' => 18.00,
-                'specialties' => ['Derecho', 'Historia'],
-                'courses' => [
-                    ['title' => 'Derecho Constitucional Venezolano', 'description' => 'Análisis de la CRBV y jurisprudencia', 'institution' => 'UCLA', 'year' => 2021],
-                ],
+                'bio' => 'Ingeniera de sistemas con maestría en física computacional. Apasionada por la enseñanza de programación y física.',
+                'professional_title' => 'Ingeniera de Sistemas, M.Sc.',
+                'education_level' => 'Postgrado',
+                'years_experience' => 6,
+                'hourly_rate' => 30.00,
             ],
             [
-                'name' => 'Ec. Roberto Sánchez',
-                'email' => 'roberto.sanchez@tutoria.com',
-                'phone' => '+58 414-6667788',
-                'city' => 'Mérida',
+                'name'  => 'José Manuel Hernández',
+                'email' => 'jose.hernandez@tutoria.com',
+                'phone' => '+58 416-9876543',
+                'city'  => 'Valencia',
                 'country' => 'Venezuela',
-                'bio' => 'Economista con maestría en finanzas. Consultor empresarial.',
-                'professional_title' => 'Magíster en Finanzas',
-                'education_level' => 'Maestria',
-                'years_experience' => 11,
-                'hourly_rate' => 22.00,
-                'specialties' => ['Economía', 'Contabilidad'],
-                'status' => 'pending',
-                'courses' => [
-                    ['title' => 'Macroeconomía para No Economistas', 'description' => 'Entender la economía de tu país', 'institution' => 'ULA', 'year' => 2023],
-                ],
+                'bio' => 'Docente bilingüe certificado con experiencia en preparación de exámenes internacionales de inglés (TOEFL, IELTS).',
+                'professional_title' => 'Profesor de Inglés',
+                'education_level' => 'Universitario',
+                'years_experience' => 10,
+                'hourly_rate' => 20.00,
             ],
         ];
 
+        $tutorUsers = [];
         $tutorProfiles = [];
-        foreach ($tutorsData as $i => $t) {
-            $status = $t['status'] ?? 'approved';
-            unset($t['status']);
 
-            $user = User::forceCreate([
-                'name' => $t['name'],
-                'email' => $t['email'],
-                'password' => $password,
-                'phone' => $t['phone'],
-                'city' => $t['city'],
-                'country' => $t['country'],
-                'bio' => $t['bio'],
-                'role' => 'tutor',
-                'is_active' => true,
-                'email_verified_at' => now(),
-            ]);
+        foreach ($tutors as $tutorData) {
+            $user = User::firstOrCreate(
+                ['email' => $tutorData['email']],
+                [
+                    'name'     => $tutorData['name'],
+                    'email'    => $tutorData['email'],
+                    'password' => Hash::make('password'),
+                    'role'     => 'tutor',
+                    'phone'    => $tutorData['phone'],
+                    'city'     => $tutorData['city'],
+                    'country'  => $tutorData['country'],
+                    'bio'      => $tutorData['bio'],
+                    'is_active' => true,
+                    'email_verified_at' => now(),
+                ]
+            );
 
-            $specialtyNames = $t['specialties'];
-            $coursesData = $t['courses'];
-            unset($t['specialties'], $t['courses'], $t['name'], $t['email'], $t['phone'], $t['city'], $t['country'], $t['bio']);
+            $profile = TutorProfile::firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'user_id'          => $user->id,
+                    'professional_title' => $tutorData['professional_title'],
+                    'education_level'  => $tutorData['education_level'],
+                    'years_experience' => $tutorData['years_experience'],
+                    'hourly_rate'      => $tutorData['hourly_rate'],
+                    'status'           => 'approved',
+                    'is_approved'      => true,
+                    'approval_date'    => now()->subDays(30),
+                    'average_rating'   => 0,
+                    'total_sessions'   => 0,
+                    'total_warnings'   => 0,
+                ]
+            );
 
-            $t['user_id'] = $user->id;
-            $t['status'] = $status;
-            $t['is_approved'] = $status === 'approved';
-            $t['approval_date'] = $status === 'approved' ? now()->subDays(rand(10, 90)) : null;
-            $t['average_rating'] = $status === 'approved' ? rand(38, 50) / 10 : 0;
-            $t['total_sessions'] = $status === 'approved' ? rand(5, 45) : 0;
-            $t['total_warnings'] = $status === 'approved' ? rand(0, 2) : 0;
-
-            $profile = TutorProfile::forceCreate($t);
-
-            // Attach specialties via BelongsToMany relationship
-            foreach ($specialtyNames as $sName) {
-                $specialty = Specialty::where('name', $sName)->first();
-                if ($specialty) {
-                    $profile->specialties()->attach($specialty->id);
-                }
-            }
-
-            // Create courses
-            foreach ($coursesData as $c) {
-                TutorCourse::create([
-                    'tutor_profile_id' => $profile->id,
-                    'title' => $c['title'],
-                    'description' => $c['description'],
-                    'file_path' => 'courses/' . Str::slug($c['title']) . '.pdf',
-                    'institution' => $c['institution'],
-                    'year' => $c['year'],
-                ]);
-            }
-
-            // Create availabilities for approved tutors
-            if ($status === 'approved') {
-                $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-                foreach ($days as $day) {
-                    TutorAvailability::create([
-                        'tutor_profile_id' => $profile->id,
-                        'day_of_week' => $day,
-                        'start_time' => '09:00:00',
-                        'end_time' => '18:00:00',
-                        'is_active' => true,
-                    ]);
-                }
-            }
-
+            $tutorUsers[] = $user;
             $tutorProfiles[] = $profile;
         }
 
-        // ═══════════════════════════════════════
-        // ESTUDIANTES (10)
-        // ═══════════════════════════════════════
-        $studentsData = [
-            ['name' => 'Pedro Jiménez', 'email' => 'pedro.jimenez@tutoria.com', 'phone' => '+58 412-1112233', 'city' => 'Caracas', 'education_level' => 'Pregrado', 'institution' => 'UCV'],
-            ['name' => 'Camila Torres', 'email' => 'camila.torres@tutoria.com', 'phone' => '+58 414-2223344', 'city' => 'Maracaibo', 'education_level' => 'Pregrado', 'institution' => 'LUZ'],
-            ['name' => 'Diego Morales', 'email' => 'diego.morales@tutoria.com', 'phone' => '+58 416-3334455', 'city' => 'Valencia', 'education_level' => 'Maestria', 'institution' => 'UC'],
-            ['name' => 'Sofía Ramírez', 'email' => 'sofia.ramirez@tutoria.com', 'phone' => '+58 424-4445566', 'city' => 'Barquisimeto', 'education_level' => 'Pregrado', 'institution' => 'UCLA'],
-            ['name' => 'Miguel Fernández', 'email' => 'miguel.fernandez@tutoria.com', 'phone' => '+58 412-5556677', 'city' => 'Mérida', 'education_level' => 'Doctorado', 'institution' => 'ULA'],
-            ['name' => 'Valentina Rojas', 'email' => 'valentina.rojas@tutoria.com', 'phone' => '+58 414-6667788', 'city' => 'Caracas', 'education_level' => 'Pregrado', 'institution' => 'USB'],
-            ['name' => 'Andrés Pérez', 'email' => 'andres.perez@tutoria.com', 'phone' => '+58 416-7778899', 'city' => 'Maracay', 'education_level' => 'Especializacion', 'institution' => 'UNEG'],
-            ['name' => 'Isabella Contreras', 'email' => 'isabella.contreras@tutoria.com', 'phone' => '+58 424-8889900', 'city' => 'Caracas', 'education_level' => 'Pregrado', 'institution' => 'UCAB'],
-            ['name' => 'Gabriel Vargas', 'email' => 'gabriel.vargas@tutoria.com', 'phone' => '+58 412-9990011', 'city' => 'Puerto Ordaz', 'education_level' => 'Pregrado', 'institution' => 'UNEXPO'],
-            ['name' => 'Luciana Méndez', 'email' => 'luciana.mendez@tutoria.com', 'phone' => '+58 414-0001122', 'city' => 'Lechería', 'education_level' => 'Maestria', 'institution' => 'UDO'],
+        // ─── Assign specialties to tutors ──────────────────────────
+        $tutorProfiles[0]->specialties()->syncWithoutDetaching([$math->id, $physics->id]);
+        $tutorProfiles[1]->specialties()->syncWithoutDetaching([$prog->id, $physics->id]);
+        $tutorProfiles[2]->specialties()->syncWithoutDetaching([$english->id, $chem->id]);
+
+        // ─── Create courses for tutors ─────────────────────────────
+        TutorCourse::firstOrCreate(
+            ['tutor_profile_id' => $tutorProfiles[0]->id, 'title' => 'Cálculo Diferencial e Integral'],
+            [
+                'description' => 'Curso completo de cálculo diferencial e integral con ejercicios prácticos y ejemplos venezolanos.',
+                'institution' => 'Universidad Central de Venezuela',
+                'year' => 2024,
+            ]
+        );
+
+        TutorCourse::firstOrCreate(
+            ['tutor_profile_id' => $tutorProfiles[1]->id, 'title' => 'Programación en Python desde Cero'],
+            [
+                'description' => 'Aprende Python desde los fundamentos hasta conceptos avanzados. Incluye proyectos prácticos.',
+                'institution' => 'Universidad del Zulia',
+                'year' => 2024,
+            ]
+        );
+
+        TutorCourse::firstOrCreate(
+            ['tutor_profile_id' => $tutorProfiles[2]->id, 'title' => 'Inglés Conversacional B1-B2'],
+            [
+                'description' => 'Desarrolla tu fluidez en inglés conversacional con temas del día a día y preparación TOEFL.',
+                'institution' => 'Universidad de Carabobo',
+                'year' => 2024,
+            ]
+        );
+
+        // ─── Create Students ────────────────────────────────────────
+        $students = [
+            [
+                'name'  => 'Ana Sofía Martínez',
+                'email' => 'ana.martinez@tutoria.com',
+                'phone' => '+58 412-5551234',
+                'city'  => 'Caracas',
+                'country' => 'Venezuela',
+                'education_level' => 'Universitario',
+                'institution' => 'Universidad Central de Venezuela',
+            ],
+            [
+                'name'  => 'Pedro Luis García',
+                'email' => 'pedro.garcia@tutoria.com',
+                'phone' => '+58 414-5555678',
+                'city'  => 'Maracaibo',
+                'country' => 'Venezuela',
+                'education_level' => 'Bachiller',
+                'institution' => null,
+            ],
+            [
+                'name'  => 'Valentina Rodríguez',
+                'email' => 'valentina.rodriguez@tutoria.com',
+                'phone' => '+58 416-5559012',
+                'city'  => 'Valencia',
+                'country' => 'Venezuela',
+                'education_level' => 'Universitario',
+                'institution' => 'Universidad de Carabobo',
+            ],
+            [
+                'name'  => 'Diego Armando Torres',
+                'email' => 'diego.torres@tutoria.com',
+                'phone' => '+58 424-5553456',
+                'city'  => 'Barquisimeto',
+                'country' => 'Venezuela',
+                'education_level' => 'Universitario',
+                'institution' => 'Universidad Centroccidental Lisandro Alvarado',
+            ],
+            [
+                'name'  => 'Isabella María López',
+                'email' => 'isabella.lopez@tutoria.com',
+                'phone' => '+58 412-5557890',
+                'city'  => 'Caracas',
+                'country' => 'Venezuela',
+                'education_level' => 'Postgrado',
+                'institution' => 'Universidad Simón Bolívar',
+            ],
         ];
 
         $studentUsers = [];
-        foreach ($studentsData as $s) {
-            $user = User::forceCreate([
-                'name' => $s['name'],
-                'email' => $s['email'],
-                'password' => $password,
-                'phone' => $s['phone'],
-                'city' => $s['city'],
-                'country' => 'Venezuela',
-                'role' => 'student',
-                'is_active' => true,
-                'email_verified_at' => now(),
-            ]);
 
-            StudentProfile::create([
-                'user_id' => $user->id,
-                'education_level' => $s['education_level'],
-                'institution' => $s['institution'],
-                'total_sessions_completed' => 0,
-            ]);
+        foreach ($students as $studentData) {
+            $user = User::firstOrCreate(
+                ['email' => $studentData['email']],
+                [
+                    'name'     => $studentData['name'],
+                    'email'    => $studentData['email'],
+                    'password' => Hash::make('password'),
+                    'role'     => 'student',
+                    'phone'    => $studentData['phone'],
+                    'city'     => $studentData['city'],
+                    'country'  => $studentData['country'],
+                    'is_active' => true,
+                    'email_verified_at' => now(),
+                ]
+            );
+
+            StudentProfile::firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'user_id'                 => $user->id,
+                    'education_level'         => $studentData['education_level'],
+                    'institution'             => $studentData['institution'],
+                    'total_sessions_completed' => 0,
+                ]
+            );
 
             $studentUsers[] = $user;
         }
 
-        // ═══════════════════════════════════════
-        // TOKENS (para estudiantes)
-        // ═══════════════════════════════════════
-        foreach ($studentUsers as $si => $student) {
-            // Initial admin credit
-            $initialTokens = rand(10, 50);
-            Token::create([
-                'user_id' => $student->id,
-                'quantity' => $initialTokens,
-                'transaction_type' => 'admin_credit',
-                'amount' => null,
-                'tokens_before' => 0,
-                'tokens_after' => $initialTokens,
-                'description' => 'Tokens iniciales de bienvenida',
-                'reference' => 'BIENVENIDA-' . ($si + 1),
-            ]);
-
-            // Some students have purchases
-            if ($si % 2 === 0) {
-                $purchaseQty = rand(20, 100);
-                $balance = $initialTokens + $purchaseQty;
-                Token::create([
-                    'user_id' => $student->id,
-                    'quantity' => $purchaseQty,
-                    'transaction_type' => 'purchase',
-                    'amount' => rand(5, 30) + 0.50,
-                    'tokens_before' => $initialTokens,
-                    'tokens_after' => $balance,
-                    'description' => 'Compra de paquete de tokens',
-                    'reference' => 'COMPRA-' . ($si + 1),
-                ]);
-            }
+        // ─── Create Tokens for all users ───────────────────────────
+        foreach ($tutorUsers as $user) {
+            Token::firstOrCreate(
+                ['user_id' => $user->id, 'reference' => "initial_balance_tutor_{$user->id}"],
+                [
+                    'user_id'          => $user->id,
+                    'quantity'         => 0,
+                    'transaction_type' => 'admin_credit',
+                    'amount'           => 0,
+                    'tokens_before'    => 0,
+                    'tokens_after'     => 0,
+                    'description'      => 'Saldo inicial (tutor)',
+                    'reference'        => "initial_balance_tutor_{$user->id}",
+                ]
+            );
         }
 
-        // ═══════════════════════════════════════
-        // SESIONES DE TUTORÍA
-        // ═══════════════════════════════════════
-        $sessionTitles = [
-            'Introducción al Cálculo Diferencial',
-            'Derivadas - Regla de la Cadena',
-            'React Hooks - useState y useEffect',
-            'Preparación TOEFL - Speaking Section',
-            'Química Orgánica - Nomenclatura',
-            'Derecho Constitucional - Art. 33 CRBV',
-            'Ecuaciones Diferenciales Parciales',
-            'JavaScript Avanzado - Closures',
-            'IELTS Writing Task 2 Practice',
-            'Estequiometría y Balanceo de Ecuaciones',
-            'Probabilidad y Estadística Aplicada',
-            'Python para Data Science',
-            'Gramática Inglesa - Tiempos Verbales',
-            'Mecánica Cuántica Básica',
-            'Economía Internacional - Comercio',
-            'Álgebra Lineal - Transformaciones',
-            'API RESTful con Node.js',
-            'Filosofía Política - Hobbes y Rousseau',
-            'Bioquímica - Ciclo de Krebs',
-            'Contabilidad de Costos - ABC',
-        ];
+        foreach ($studentUsers as $user) {
+            Token::firstOrCreate(
+                ['user_id' => $user->id, 'reference' => "initial_balance_student_{$user->id}"],
+                [
+                    'user_id'          => $user->id,
+                    'quantity'         => 50,
+                    'transaction_type' => 'admin_credit',
+                    'amount'           => 25.00,
+                    'tokens_before'    => 0,
+                    'tokens_after'     => 50,
+                    'description'      => 'Saldo inicial de bienvenida - 50 tokens',
+                    'reference'        => "initial_balance_student_{$user->id}",
+                ]
+            );
+        }
 
-        $approvedTutors = array_filter($tutorProfiles, fn($tp) => $tp->status === 'approved');
-        $approvedTutors = array_values($approvedTutors);
-
+        // ─── Create Tutoring Sessions ───────────────────────────────
         $sessions = [];
-        foreach ($sessionTitles as $si => $title) {
-            $tutor = $approvedTutors[$si % count($approvedTutors)];
-            $student = $studentUsers[$si % count($studentUsers)];
 
-            $rand = rand(0, 100);
-            if ($rand < 45) {
-                $status = 'completed';
-            } elseif ($rand < 65) {
-                $status = 'scheduled';
-            } elseif ($rand < 75) {
-                $status = 'in_progress';
-            } else {
-                $status = 'cancelled';
-            }
+        // Session 1: Completed
+        $sessions[] = TutoringSession::firstOrCreate(
+            [
+                'tutor_profile_id' => $tutorProfiles[0]->id,
+                'student_user_id'  => $studentUsers[0]->id,
+                'title'            => 'Repaso de Cálculo Diferencial',
+            ],
+            [
+                'tutor_profile_id'   => $tutorProfiles[0]->id,
+                'student_user_id'    => $studentUsers[0]->id,
+                'title'              => 'Repaso de Cálculo Diferencial',
+                'description'        => 'Repaso general de límites, derivadas y aplicaciones para el examen parcial.',
+                'scheduled_at'       => Carbon::now()->subDays(5)->setHour(10)->setMinute(0),
+                'started_at'         => Carbon::now()->subDays(5)->setHour(10)->setMinute(0),
+                'ended_at'           => Carbon::now()->subDays(5)->setHour(11)->setMinute(30),
+                'duration_minutes'   => 90,
+                'status'             => 'completed',
+                'tokens_cost'        => 5,
+                'tutor_earned_tokens' => 4,
+                'meeting_link'       => 'https://meet.jit.si/tutoria-session-1',
+            ]
+        );
 
-            $scheduledAt = now()->subDays(rand(1, 30))->setHour(rand(8, 18))->setMinute(0);
+        // Session 2: In progress
+        $sessions[] = TutoringSession::firstOrCreate(
+            [
+                'tutor_profile_id' => $tutorProfiles[1]->id,
+                'student_user_id'  => $studentUsers[1]->id,
+                'title'            => 'Introducción a Python',
+            ],
+            [
+                'tutor_profile_id'   => $tutorProfiles[1]->id,
+                'student_user_id'    => $studentUsers[1]->id,
+                'title'              => 'Introducción a Python',
+                'description'        => 'Clase introductoria: variables, tipos de datos, estructuras de control básicas.',
+                'scheduled_at'       => Carbon::now()->subMinutes(30),
+                'started_at'         => Carbon::now()->subMinutes(30),
+                'ended_at'           => null,
+                'duration_minutes'   => 60,
+                'status'             => 'in_progress',
+                'tokens_cost'        => 8,
+                'tutor_earned_tokens' => 7,
+                'meeting_link'       => 'https://meet.jit.si/tutoria-session-2',
+            ]
+        );
 
-            $session = TutoringSession::forceCreate([
-                'tutor_profile_id' => $tutor->id,
-                'student_user_id' => $student->id,
-                'title' => $title,
-                'description' => "Sesión de tutoría sobre {$title}",
-                'scheduled_at' => $status === 'scheduled' ? now()->addDays(rand(1, 7)) : $scheduledAt,
-                'started_at' => in_array($status, ['completed', 'in_progress']) ? (clone $scheduledAt)->addMinutes(rand(0, 5)) : null,
-                'ended_at' => $status === 'completed' ? (clone $scheduledAt)->addMinutes(rand(45, 90)) : null,
-                'duration_minutes' => [30, 45, 60, 90, 120][rand(0, 4)],
-                'status' => $status,
-                'tokens_cost' => rand(1, 3),
-                'tutor_earned_tokens' => $status === 'completed' ? rand(1, 3) : 0,
-                'meeting_link' => $status !== 'cancelled' ? 'https://meet.jit.si/' . Str::random(10) : null,
-            ]);
+        // Session 3: Scheduled
+        $sessions[] = TutoringSession::firstOrCreate(
+            [
+                'tutor_profile_id' => $tutorProfiles[2]->id,
+                'student_user_id'  => $studentUsers[2]->id,
+                'title'            => 'Conversación en Inglés - Nivel B1',
+            ],
+            [
+                'tutor_profile_id'   => $tutorProfiles[2]->id,
+                'student_user_id'    => $studentUsers[2]->id,
+                'title'              => 'Conversación en Inglés - Nivel B1',
+                'description'        => 'Práctica de conversación cotidiana y preparación para situación de viaje.',
+                'scheduled_at'       => Carbon::now()->addDays(2)->setHour(15)->setMinute(0),
+                'started_at'         => null,
+                'ended_at'           => null,
+                'duration_minutes'   => 45,
+                'status'             => 'scheduled',
+                'tokens_cost'        => 6,
+                'tutor_earned_tokens' => 5,
+                'meeting_link'       => 'https://meet.jit.si/tutoria-session-3',
+            ]
+        );
 
-            $sessions[] = $session;
-
-            // Update student profile
-            if ($status === 'completed') {
-                $student->studentProfile->increment('total_sessions_completed');
-            }
-
-            // Create session messages for completed sessions
-            if ($status === 'completed' && rand(0, 1)) {
-                $messages = [
-                    'Tengo una duda sobre el tema principal',
-                    'Claro, vamos a revisarlo paso a paso',
-                    'Entendido, gracias por la explicación',
-                    'Excelente, si tienes más dudas puedes escribirme',
-                ];
-                foreach ($messages as $mi => $msg) {
-                    SessionMessage::create([
-                        'tutoring_session_id' => $session->id,
-                        'user_id' => $mi % 2 === 0 ? $student->id : $tutor->user_id,
-                        'message' => $msg,
-                    ]);
-                }
-            }
+        // ─── Update tutor stats ────────────────────────────────────
+        $tutorProfiles[0]->increment('total_sessions');
+        $studentProfiles0 = StudentProfile::where('user_id', $studentUsers[0]->id)->first();
+        if ($studentProfiles0) {
+            $studentProfiles0->increment('total_sessions_completed');
         }
 
-        // ═══════════════════════════════════════
-        // REVIEWS (resenas y advertencias)
-        // ═══════════════════════════════════════
-        $reviewComments = [
-            'Excelente tutor, muy claro en sus explicaciones.',
-            'Me ayudó muchísimo a entender los conceptos difíciles.',
-            'Puntual y profesional. Muy recomendado.',
-            'Las sesiones son muy dinámicas y productivas.',
-            'Tiene mucha paciencia y dominio del tema.',
-            'Buen tutor, pero a veces va muy rápido.',
-            'La clase fue muy útil para mi examen final.',
-            'Explica de forma sencilla temas complejos.',
-        ];
-
-        $completedSessions = array_filter($sessions, fn($s) => $s->status === 'completed');
-        $completedSessions = array_values($completedSessions);
-
-        foreach ($completedSessions as $si => $session) {
-            Review::create([
-                'tutoring_session_id' => $session->id,
-                'reviewer_user_id' => $session->student_user_id,
-                'tutor_profile_id' => $session->tutor_profile_id,
-                'rating' => rand(3, 5),
-                'comment' => $reviewComments[$si % count($reviewComments)],
-                'type' => 'review',
-                'is_anonymous' => rand(0, 1) === 1,
-            ]);
-        }
-
-        // Create some warnings
-        $warningTutors = array_slice($approvedTutors, 0, 2);
-        $warningReasons = [
-            ['Falta de puntualidad recurrente', 'leve'],
-            ['No se presentó a 3 sesiones programadas', 'moderada'],
-        ];
-        foreach ($warningTutors as $wi => $tutor) {
-            Review::create([
+        // ─── Create Reviews ────────────────────────────────────────
+        $reviews = [
+            // Reviews for tutor 1 (Carlos - Math)
+            [
+                'tutoring_session_id' => $sessions[0]->id,
+                'reviewer_user_id'    => $studentUsers[0]->id,
+                'tutor_profile_id'    => $tutorProfiles[0]->id,
+                'rating'              => 5,
+                'comment'             => 'Excelente tutor. Explica de forma muy clara y tiene mucha paciencia. Me ayudó a entender derivadas por fin.',
+            ],
+            [
                 'tutoring_session_id' => null,
-                'reviewer_user_id' => null,
-                'tutor_profile_id' => $tutor->id,
-                'rating' => 0,
-                'comment' => $warningReasons[$wi][0],
-                'type' => 'warning',
-                'is_anonymous' => false,
-                'severity' => $warningReasons[$wi][1],
-            ]);
-        }
-
-        // ═══════════════════════════════════════
-        // NOTIFICACIONES
-        // ═══════════════════════════════════════
-        $notificationTemplates = [
-            ['Tu sesión ha sido programada', 'Recuerda estar puntual a tu próxima sesión.', 'session'],
-            ['Nueva reseña recibida', 'Un estudiante dejó una reseña sobre tu sesión.', 'review'],
-            ['Tokens recargados exitosamente', 'Se han acreditado tokens en tu cuenta.', 'token'],
-            ['Tutor aprobado', 'Tu perfil de tutor ha sido aprobado.', 'system'],
-            ['Recordatorio de sesión', 'Tienes una sesión programada para mañana.', 'reminder'],
-            ['Nuevo mensaje recibido', 'Tienes un mensaje nuevo en la plataforma.', 'message'],
+                'reviewer_user_id'    => $studentUsers[2]->id,
+                'tutor_profile_id'    => $tutorProfiles[0]->id,
+                'rating'              => 4,
+                'comment'             => 'Muy buen profesor, muy preparado. A veces va un poco rápido pero siempre está dispuesto a repetir.',
+            ],
+            [
+                'tutoring_session_id' => null,
+                'reviewer_user_id'    => $studentUsers[3]->id,
+                'tutor_profile_id'    => $tutorProfiles[0]->id,
+                'rating'              => 5,
+                'comment'             => 'La mejor clase de matemáticas que he tenido. Carlos tiene una forma única de hacer fácil lo difícil.',
+            ],
+            // Reviews for tutor 2 (María - Programming/Physics)
+            [
+                'tutoring_session_id' => null,
+                'reviewer_user_id'    => $studentUsers[0]->id,
+                'tutor_profile_id'    => $tutorProfiles[1]->id,
+                'rating'              => 4,
+                'comment'             => 'María es excelente explicando conceptos de programación. Sus ejemplos prácticos son muy útiles.',
+            ],
+            [
+                'tutoring_session_id' => null,
+                'reviewer_user_id'    => $studentUsers[3]->id,
+                'tutor_profile_id'    => $tutorProfiles[1]->id,
+                'rating'              => 5,
+                'comment'             => 'Increíble dominio de Python y física. Me ayudó con mi proyecto de grado. 100% recomendada.',
+            ],
+            // Reviews for tutor 3 (José - English)
+            [
+                'tutoring_session_id' => null,
+                'reviewer_user_id'    => $studentUsers[0]->id,
+                'tutor_profile_id'    => $tutorProfiles[2]->id,
+                'rating'              => 5,
+                'comment'             => 'José hace las clases de inglés muy dinámicas y divertidas. En pocas semanas mejoré mucho mi pronunciación.',
+            ],
+            [
+                'tutoring_session_id' => null,
+                'reviewer_user_id'    => $studentUsers[1]->id,
+                'tutor_profile_id'    => $tutorProfiles[2]->id,
+                'rating'              => 4,
+                'comment'             => 'Buen profesor de inglés. Muy profesional y siempre preparado para las clases.',
+            ],
+            [
+                'tutoring_session_id' => null,
+                'reviewer_user_id'    => $studentUsers[4]->id,
+                'tutor_profile_id'    => $tutorProfiles[2]->id,
+                'rating'              => 5,
+                'comment'             => 'Me preparó para el TOEFL y obtuve una excelente puntuación. Profesor altamente recomendado.',
+            ],
+            // More reviews for tutor 1
+            [
+                'tutoring_session_id' => null,
+                'reviewer_user_id'    => $studentUsers[4]->id,
+                'tutor_profile_id'    => $tutorProfiles[0]->id,
+                'rating'              => 4,
+                'comment'             => 'Muy bueno enseñando álgebra lineal. Tiene mucha paciencia con los estudiantes que necesitas más ayuda.',
+            ],
+            // More reviews for tutor 2
+            [
+                'tutoring_session_id' => null,
+                'reviewer_user_id'    => $studentUsers[2]->id,
+                'tutor_profile_id'    => $tutorProfiles[1]->id,
+                'rating'              => 5,
+                'comment'             => 'María es una tutora excepcional. Sus clases de física computacional son increíblemente claras.',
+            ],
         ];
 
-        // Notifications for admin
-        $admin = User::where('email', 'admin@tutoria.com')->first();
-        foreach (['Nuevo tutor registrado', 'Solicitud de retiro de tokens pendiente', 'Nueva reseña reportada'] as $nt) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'title' => $nt,
-                'message' => "Hay una nueva actividad que requiere tu atención: {$nt}.",
-                'type' => 'admin',
-                'is_read' => rand(0, 1) === 1,
+        foreach ($reviews as $reviewData) {
+            Review::firstOrCreate(
+                [
+                    'reviewer_user_id'    => $reviewData['reviewer_user_id'],
+                    'tutor_profile_id'    => $reviewData['tutor_profile_id'],
+                    'comment'             => $reviewData['comment'],
+                ],
+                [
+                    'tutoring_session_id' => $reviewData['tutoring_session_id'],
+                    'reviewer_user_id'    => $reviewData['reviewer_user_id'],
+                    'tutor_profile_id'    => $reviewData['tutor_profile_id'],
+                    'rating'              => $reviewData['rating'],
+                    'comment'             => $reviewData['comment'],
+                    'type'                => 'review',
+                    'is_anonymous'        => false,
+                ]
+            );
+        }
+
+        // ─── Update average ratings ────────────────────────────────
+        foreach ($tutorProfiles as $profile) {
+            $avgRating = Review::where('tutor_profile_id', $profile->id)
+                ->where('type', 'review')
+                ->avg('rating');
+            $profile->update([
+                'average_rating' => $avgRating ? round($avgRating, 2) : 0,
             ]);
         }
 
-        // Notifications for tutors
-        foreach ($approvedTutors as $ti => $tutor) {
-            for ($n = 0; $n < rand(2, 5); $n++) {
-                $tpl = $notificationTemplates[$n % count($notificationTemplates)];
-                Notification::create([
-                    'user_id' => $tutor->user_id,
-                    'title' => $tpl[0],
-                    'message' => $tpl[1],
-                    'type' => $tpl[2],
-                    'is_read' => rand(0, 1) === 1,
-                ]);
-            }
-        }
-
-        // Notifications for students
-        foreach ($studentUsers as $si => $student) {
-            for ($n = 0; $n < rand(1, 4); $n++) {
-                $tpl = $notificationTemplates[($n + $si) % count($notificationTemplates)];
-                Notification::create([
-                    'user_id' => $student->id,
-                    'title' => $tpl[0],
-                    'message' => $tpl[1],
-                    'type' => $tpl[2],
-                    'is_read' => rand(0, 1) === 1,
-                ]);
-            }
-        }
-
-        // ═══════════════════════════════════════
-        // COMPROBANTES DE PAGO
-        // ═══════════════════════════════════════
-        $receiptStatuses = ['pending', 'pending', 'pending', 'approved', 'rejected'];
-        foreach ($studentUsers as $si => $student) {
-            if ($si >= 5) break;
-
-            $status = $receiptStatuses[$si];
-            $receipt = PaymentReceipt::create([
-                'user_id' => $student->id,
-                'tokens_requested' => rand(10, 50),
-                'amount_paid' => rand(3, 20) + 0.50,
-                'currency' => ['USD', 'VES'][rand(0, 1)],
-                'bank_name' => ['Banco de Venezuela', 'Banesco', 'Mercantil', 'Provincial', 'BNC'][rand(0, 4)],
-                'phone_number' => '0414-' . rand(1000000, 9999999),
-                'reference_number' => rand(10000000, 99999999),
-                'receipt_image_path' => null,
-                'status' => $status,
-                'admin_notes' => $status === 'rejected' ? 'Referencia no encontrada en el sistema' : null,
-                'reviewed_at' => in_array($status, ['approved', 'rejected']) ? now()->subDays(rand(1, 5)) : null,
-                'reviewed_by' => in_array($status, ['approved', 'rejected']) ? $admin->id : null,
-            ]);
-        }
-
-        // ═══════════════════════════════════════
-        // CONVERSACIONES Y MENSAJES
-        // ═══════════════════════════════════════
-        $conversationsCreated = [];
-        foreach ($approvedTutors as $ti => $tutor) {
-            // Each tutor has conversations with 2-3 students
-            $numConversations = rand(1, 3);
-            for ($c = 0; $c < $numConversations; $c++) {
-                $studentIdx = ($ti + $c) % count($studentUsers);
-
-                $exists = false;
-                foreach ($conversationsCreated as $conv) {
-                    if (
-                        ($conv['student'] == $studentUsers[$studentIdx]->id && $conv['tutor'] == $tutor->user_id) ||
-                        ($conv['student'] == $tutor->user_id && $conv['tutor'] == $studentUsers[$studentIdx]->id)
-                    ) {
-                        $exists = true;
-                        break;
-                    }
-                }
-                if ($exists) continue;
-
-                $conversation = Conversation::create([
-                    'student_user_id' => $studentUsers[$studentIdx]->id,
-                    'tutor_user_id' => $tutor->user_id,
-                    'last_message_at' => now()->subHours(rand(1, 48)),
-                ]);
-
-                $conversationsCreated[] = [
-                    'student' => $studentUsers[$studentIdx]->id,
-                    'tutor' => $tutor->user_id,
-                ];
-
-                // Create 2-6 messages per conversation
-                $numMessages = rand(2, 6);
-                $chatMessages = [
-                    'Hola, tengo una consulta sobre la tutoría',
-                    'Hola, claro, dime en qué puedo ayudarte',
-                    'Quisiera programar una sesión para esta semana',
-                    'Perfecto, tengo disponibilidad el jueves a las 3pm',
-                    'Excelente, quedo registrado. Gracias',
-                ];
-                for ($m = 0; $m < $numMessages; $m++) {
-                    Message::create([
-                        'conversation_id' => $conversation->id,
-                        'sender_user_id' => $m % 2 === 0 ? $studentUsers[$studentIdx]->id : $tutor->user_id,
-                        'content' => $chatMessages[$m % count($chatMessages)],
-                        'is_read' => $m < $numMessages - 1,
-                        'read_at' => $m < $numMessages - 1 ? now()->subHours(rand(1, 24)) : null,
-                    ]);
-                }
-            }
-        }
-
-        // ═══════════════════════════════════════
-        // PRINT CREDENTIALS
-        // ═══════════════════════════════════════
-        $this->command->newLine();
-        $this->command->info('═══════════════════════════════════════════════');
-        $this->command->info('  DATOS DE PRUEBA CREADOS EXITOSAMENTE');
-        $this->command->info('═══════════════════════════════════════════════');
-        $this->command->newLine();
-
-        $this->command->info('  ADMINISTRADOR:');
-        $this->command->warn('    admin@tutoria.com  /  password');
-        $this->command->newLine();
-
-        $this->command->info('  TUTORES APROBADOS (5):');
-        foreach (array_slice($tutorsData, 0, 5) as $td) {
-            $this->command->warn("    {$td['email']}  /  password  ({$td['professional_title']})");
-        }
-        $this->command->newLine();
-
-        $this->command->info('  TUTOR PENDIENTE (1):');
-        $this->command->warn("    roberto.sanchez@tutoria.com  /  password  (requiere aprobación)");
-        $this->command->newLine();
-
-        $this->command->info('  ESTUDIANTES (10):');
-        foreach ($studentsData as $sd) {
-            $this->command->warn("    {$sd['email']}  /  password  ({$sd['institution']})");
-        }
-        $this->command->newLine();
-
-        $this->command->info('═══════════════════════════════════════════════');
-        $this->command->info('  TODOS LOS USUARIOS: password = password');
-        $this->command->info('═══════════════════════════════════════════════');
-        $this->command->newLine();
+        $this->command->info('Datos de prueba creados exitosamente:');
+        $this->command->info("  - 3 tutores aprobados");
+        $this->command->info("  - 5 estudiantes con 50 tokens cada uno");
+        $this->command->info("  - 3 sesiones de tutoría (completada, en progreso, programada)");
+        $this->command->info("  - 10 reseñas distribuidas entre tutores");
+        $this->command->info("  Contraseña de todos los usuarios: password");
     }
 }

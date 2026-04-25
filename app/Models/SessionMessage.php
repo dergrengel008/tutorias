@@ -14,6 +14,11 @@ class SessionMessage extends Model
         'tutoring_session_id',
         'user_id',
         'message',
+        'type',
+    ];
+
+    protected $attributes = [
+        'type' => 'whiteboard_chat',
     ];
 
     protected function casts(): array

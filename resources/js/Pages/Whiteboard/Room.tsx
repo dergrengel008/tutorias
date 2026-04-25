@@ -146,6 +146,7 @@ export default function WhiteboardRoom({ session, isTutor }: PageProps) {
             // Skip if nothing changed
             if (hash === lastSavedHashRef.current) return;
             lastSavedHashRef.current = hash;
+            lastLoadedHashRef.current = hash;
 
             setIsSaving(true);
             setSaveStatus('saving');
@@ -183,6 +184,7 @@ export default function WhiteboardRoom({ session, isTutor }: PageProps) {
 
             // Skip if already loaded this version
             if (serverHash === lastLoadedHashRef.current) return;
+            if (serverHash === lastSavedHashRef.current) return;
 
             // Sanitize: fix document.name null → ""
             const sanitized = sanitizeSnapshot(parsed);
@@ -446,7 +448,7 @@ export default function WhiteboardRoom({ session, isTutor }: PageProps) {
             {/* Main Content */}
             <div className="flex-1 flex overflow-hidden">
                 {/* Tldraw Canvas */}
-                <div className="flex-1 relative">
+                <div style={{ flex: 1, position: 'relative', height: 'calc(100vh - 56px)' }}>
                     <Tldraw onMount={handleMount} />
 
                     {/* Floating save indicator */}
