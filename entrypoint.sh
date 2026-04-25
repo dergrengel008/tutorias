@@ -18,10 +18,11 @@ fi
 echo ">>> Running database migrations..."
 php artisan migrate --force
 
-if [ ! -f /var/www/html/storage/.seeded ]; then
+# Only seed if no users exist
+USER_COUNT=$(php artisan tinker --execute="echo \App\Models\User::count();" 2>/dev/null | tail -1)
+if [ "$USER_COUNT" = "0" ]; then
     echo ">>> Running database seeders..."
     php artisan db:seed --force
-    touch /var/www/html/storage/.seeded
 fi
 
 php artisan config:cache
