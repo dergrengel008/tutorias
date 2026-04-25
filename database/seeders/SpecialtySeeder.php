@@ -3,15 +3,10 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use App\Models\Specialty;
 
 class SpecialtySeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $specialties = [
@@ -33,11 +28,13 @@ class SpecialtySeeder extends Seeder
         ];
 
         foreach ($specialties as $specialty) {
-            Specialty::create([
-                'name'        => $specialty['name'],
-                'description' => $specialty['description'],
-                'icon'        => $specialty['icon'],
-            ]);
+            Specialty::firstOrCreate(
+                ['name' => $specialty['name']],
+                [
+                    'description' => $specialty['description'],
+                    'icon'        => $specialty['icon'],
+                ]
+            );
         }
     }
 }
