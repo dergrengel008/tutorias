@@ -1,0 +1,145 @@
+services:
+    # ── PHP-FPM Application ──────────────────────────────────
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: production
+        container_name: tutoria-app
+        restart: unless-stopped
+        environment:
+            APP_NAME: ${APP_NAME:-TutoriaApp}
+            APP_ENV: ${APP_ENV:-production}
+            APP_KEY: ${APP_KEY:-}
+            APP_DEBUG: ${APP_DEBUG:-false}
+            APP_URL: ${APP_URL:-http://localhost}
+            LOG_CHANNEL: ${LOG_CHANNEL:-stderr}
+            LOG_LEVEL: ${LOG_LEVEL:-warning}
+
+            DB_CONNECTION: mysql
+            DB_HOST: mysql
+            DB_PORT: 3306
+            DB_DATABASE: ${DB_DATABASE:-tutoria_app}
+            DB_USERNAME: ${DB_USERNAME:-tutoria}
+            DB_PASSWORD: ${DB_PASSWORD:-secret}
+
+            CACHE_DRIVER: redis
+            QUEUE_CONNECTION: redis
+            SESSION_DRIVER: redis
+            SESSION_LIFETIME: 120
+
+            REDIS_HOST: redis
+            REDIS_PASSWORD: ${REDIS_PASSWORD:-null}
+            REDIS_PORT: 6379
+
+            MAIL_MAILER: ${MAIL_MAILER:-smtp}
+            MAIL_HOST: ${MAIL_HOST:-smtp.mailtrap.io}
+            MAIL_PORT: ${MAIL_PORT:-2525}
+            MAIL_USERNAME: ${MAIL_USERNAME:-null}
+            MAIL_PASSWORD: ${MAIL_PASSWORD:-null}
+            MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+            MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@tutoriaapp.com}
+            MAIL_FROM_NAME: "${APP_NAME:-TutoriaApp}"
+
+            BROADCAST_DRIVER: ${BROADCAST_DRIVER:-log}
+            PUSHER_APP_ID: ${PUSHER_APP_ID:-}
+            PUSHER_APP_KEY: ${PUSHER_APP_KEY:-}
+            PUSHER_APP_SECRET: ${PUSHER_APP_SECRET:-}
+            PUSHER_HOST: ${PUSHER_HOST:-api.pusherapp.com}
+
+            SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost}
+        volumes:
+            - .:/var/www/html
+            - php-socket:/var/run/php
+        depends_on:
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        networks:
+            - tutoria-app
+
+    # ── Nginx Web Server ─────────────────────────────────────
+    webserver:
+        image: nginx:alpine
+        container_name: tutoria-webserver
+        restart: unless-stopped
+        ports:
+            - "${APP_PORT:-80}:80"
+        volumes:
+            - .:/var/www/html
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+            - php-socket:/var/run/php
+        depends_on:
+            - app
+        networks:
+            - tutoria-app
+
+    # ── MySQL Database ───────────────────────────────────────
+    mysql:
+        image: mysql:8.0
+        container_name: tutoria-mysql
+        restart: unless-stopped
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+            MYSQL_DATABASE: ${DB_DATABASE:-tutoria_app}
+            MYSQL_USER: ${DB_USERNAME:-tutoria}
+            MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+        volumes:
+            - mysql-data:/var/lib/mysql
+            - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+        ports:
+            - "${DB_FORWARD_PORT:-3306}:3306"
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootsecret}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+        networks:
+            - tutoria-app
+
+    # ── Redis Cache / Sessions / Queue ───────────────────────
+    redis:
+        image: redis:7-alpine
+        container_name: tutoria-redis
+        restart: unless-stopped
+        ports:
+            - "${REDIS_FORWARD_PORT:-6379}:6379"
+        command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+        volumes:
+            - redis-data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - tutoria-app
+
+    # ── Node.js Development Server (dev only) ────────────────
+    node:
+        image: node:20-alpine
+        container_name: tutoria-node
+        restart: unless-stopped
+        working_dir: /var/www/html
+        profiles:
+            - dev
+        volumes:
+            - .:/var/www/html
+        ports:
+            - "5173:5173"
+        command: sh -c "npm install && npm run dev"
+        networks:
+            - tutoria-app
+
+volumes:
+    mysql-data:
+        driver: local
+    redis-data:
+        driver: local
+    php-socket:
+
+networks:
+    tutoria-app:
+        driver: bridge

@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: tutoria-app
+    env: docker
+    plan: free
+    region: virginia
+    repo: https://github.com/dergrengel008/tutorias
+    branch: master
+    envVars:
+      - key: APP_NAME
+        value: TutoriaApp
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        sync: false
+      - key: APP_KEY
+        sync: false
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 5432
+      - key: DB_DATABASE
+        value: neondb
+      - key: DB_USERNAME
+        value: neondb_owner
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSLMODE
+        value: require
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_DRIVER
+        value: database
