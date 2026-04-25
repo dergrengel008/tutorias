@@ -30,26 +30,18 @@ export function useCountdown(targetDate: string | null) {
 
 export function useRemainingTime(startTime: string | null, durationMinutes: number | null) {
     const [remaining, setRemaining] = useState<number>(0);
-    const [isExpired, setIsExpired] = useState(false);
 
     useEffect(() => {
         if (!startTime || !durationMinutes) {
             setRemaining(0);
-            setIsExpired(true);
             return;
         }
 
         const end = new Date(startTime).getTime() + durationMinutes * 60 * 1000;
 
         const update = () => {
-            const diff = end - Date.now();
-            if (diff <= 0) {
-                setRemaining(0);
-                setIsExpired(true);
-            } else {
-                setRemaining(Math.floor(diff / 1000));
-                setIsExpired(false);
-            }
+            const diff = Math.floor((end - Date.now()) / 1000);
+            setRemaining(diff > 0 ? diff : 0);
         };
 
         update();
@@ -57,11 +49,13 @@ export function useRemainingTime(startTime: string | null, durationMinutes: numb
         return () => clearInterval(timer);
     }, [startTime, durationMinutes]);
 
+    const expired = remaining <= 0;
     const hours = Math.floor(remaining / 3600);
     const minutes = Math.floor((remaining % 3600) / 60);
     const seconds = remaining % 60;
+    const text = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
-    return { remaining, isExpired, hours, minutes, seconds };
+    return { remaining, expired, hours, minutes, seconds, text };
 }
 
 export default useCountdown;

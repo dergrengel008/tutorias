@@ -28,6 +28,13 @@ class TutoriaDataSeeder extends Seeder
      */
     public function run(): void
     {
+        // Skip if demo data already exists
+        if (User::where('role', 'tutor')->count() > 0) {
+            $this->command->info('Demo data already exists, skipping...');
+            return;
+        }
+
+        $now = now();
         // ─── Get specialties ────────────────────────────────────────
         $math     = Specialty::where('name', 'Matemáticas')->first();
         $physics  = Specialty::where('name', 'Física')->first();

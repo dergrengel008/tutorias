@@ -147,6 +147,7 @@ export default function WhiteboardRoom({ session, isTutor }: PageProps) {
             if (hash === lastSavedHashRef.current) return;
             lastSavedHashRef.current = hash;
             lastLoadedHashRef.current = hash;
+            lastLoadedHashRef.current = hash;
 
             setIsSaving(true);
             setSaveStatus('saving');
