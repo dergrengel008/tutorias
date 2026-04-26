@@ -139,7 +139,7 @@ class TutoriaDataSeeder extends Seeder
             $status = $t['status'] ?? 'approved';
             unset($t['status']);
 
-            $user = User::forceCreate([
+            $user = User::firstOrCreate([
                 'name' => $t['name'],
                 'email' => $t['email'],
                 'password' => $password,
@@ -164,7 +164,7 @@ class TutoriaDataSeeder extends Seeder
             $t['total_sessions'] = $status === 'approved' ? rand(5, 45) : 0;
             $t['total_warnings'] = $status === 'approved' ? rand(0, 2) : 0;
 
-            $profile = TutorProfile::forceCreate($t);
+            $profile = TutorProfile::firstOrCreate($t);
 
             // Attach specialties via BelongsToMany relationship
             foreach ($specialtyNames as $sName) {
@@ -221,7 +221,7 @@ class TutoriaDataSeeder extends Seeder
 
         $studentUsers = [];
         foreach ($studentsData as $s) {
-            $user = User::forceCreate([
+            $user = User::firstOrCreate([
                 'name' => $s['name'],
                 'email' => $s['email'],
                 'password' => $password,
@@ -233,7 +233,7 @@ class TutoriaDataSeeder extends Seeder
                 'email_verified_at' => now(),
             ]);
 
-            StudentProfile::create([
+            StudentProfile::firstOrCreate([
                 'user_id' => $user->id,
                 'education_level' => $s['education_level'],
                 'institution' => $s['institution'],
@@ -324,7 +324,7 @@ class TutoriaDataSeeder extends Seeder
 
             $scheduledAt = now()->subDays(rand(1, 30))->setHour(rand(8, 18))->setMinute(0);
 
-            $session = TutoringSession::forceCreate([
+            $session = TutoringSession::firstOrCreate([
                 'tutor_profile_id' => $tutor->id,
                 'student_user_id' => $student->id,
                 'title' => $title,
