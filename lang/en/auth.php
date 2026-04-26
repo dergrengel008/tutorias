@@ -1,0 +1,20 @@
+<?php
+return [
+    'login' => 'Login',
+    'register' => 'Register',
+    'email' => 'Email',
+    'password' => 'Password',
+    'confirm_password' => 'Confirm Password',
+    'name' => 'Full Name',
+    'remember_me' => 'Remember Me',
+    'forgot_password' => 'Forgot your password?',
+    'reset_password' => 'Reset Password',
+    'login_title' => 'Sign In',
+    'register_title' => 'Create Account',
+    'student' => 'Student',
+    'tutor' => 'Tutor',
+    'select_role' => 'Select your role',
+    'phone' => 'Phone',
+    'city' => 'City',
+    'country' => 'Country',
+];

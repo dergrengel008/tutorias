@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Models\TutoringSession;
 use App\Models\SessionMessage;
+use App\Events\WhiteboardUpdated;
+use App\Events\WhiteboardChatSent;
 
 class WhiteboardController extends Controller
 {
@@ -90,6 +92,8 @@ class WhiteboardController extends Controller
             'whiteboard_data' => $decoded,
         ]);
 
+        broadcast(new WhiteboardUpdated($sessionId, $validated['whiteboard_data'], auth()->id()));
+
         return response()->json([
             'message' => 'Pizarra guardada.',
         ]);
@@ -151,6 +155,14 @@ class WhiteboardController extends Controller
             'message' => $validated['message'],
             'type'    => 'whiteboard_chat',
         ]);
+
+        broadcast(new WhiteboardChatSent($sessionId, [
+            'id' => $msg->id,
+            'user_name' => auth()->user()->name,
+            'message' => $msg->message,
+            'created_at' => $msg->created_at->toIso8601String(),
+            'is_tutor' => $isTutor,
+        ]));
 
         return response()->json([
             'message' => 'Mensaje enviado.',

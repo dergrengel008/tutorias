@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import FlashMessage from './FlashMessage';
 import Avatar from './Avatar';
+import LanguageSwitcher from './LanguageSwitcher';
 import type { User as UserType } from '@/types';
 import { route } from '@/route';
 
@@ -94,7 +95,8 @@ export default function DefaultLayout({ children }: DefaultLayoutProps) {
 
                     {/* Desktop Auth */}
                     <div className="hidden items-center gap-3 md:flex">
-                        {user ? (
+                        <LanguageSwitcher />
+                            {user ? (
                             <div className="flex items-center gap-3">
                                 <Link
                                     href={route(dashboardRoute)}

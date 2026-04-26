@@ -273,18 +273,60 @@ export default function WhiteboardRoom({ session, isTutor }: PageProps) {
         return () => clearInterval(interval);
     }, [editor, saveWhiteboard]);
 
-    // Polling: sync whiteboard every 3s (only when not drawing)
+    // Real-time sync via WebSocket (Echo) with polling fallback
     useEffect(() => {
-        if (!editor) return;
+        if (!editor || !(window as any).Echo) {
+            // Fallback to polling if Echo not available
+            const interval = setInterval(() => {
+                loadWhiteboard(editor);
+            }, 3000);
+            return () => clearInterval(interval);
+        }
 
-        const interval = setInterval(() => {
-            loadWhiteboard(editor);
-        }, 3000);
+        const echo = (window as any).Echo;
+        const channel = echo.private(`whiteboard.${session.id}`);
 
-        return () => clearInterval(interval);
-    }, [editor, loadWhiteboard]);
+        channel.listen('.whiteboard.updated', (e: { whiteboard_data: string; user_id: number }) => {
+            if (e.user_id === auth.user.id) return; // Ignore own updates
+            const parsed = typeof e.whiteboard_data === 'string'
+                ? JSON.parse(e.whiteboard_data)
+                : e.whiteboard_data;
+            const serverHash = simpleHash(parsed);
+            if (serverHash === lastLoadedHashRef.current) return;
+            const sanitized = sanitizeSnapshot(parsed);
+            if (sanitized) {
+                editor.loadSnapshot(sanitized);
+                lastLoadedHashRef.current = serverHash;
+                lastSavedHashRef.current = serverHash;
+                setSyncStatus(new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+            }
+        });
 
-    // Load chat messages
+        channel.listen('.whiteboard.chat.sent', (e: { message: ChatMessage }) => {
+            setChatMessages((prev) => {
+                if (prev.some(m => m.id === e.message.id)) return prev;
+                return [...prev, e.message];
+            });
+        });
+
+        channel.listen('.session.started', () => {
+            // Session started by tutor
+        });
+
+        channel.listen('.session.completed', () => {
+            // Session completed by tutor
+        });
+
+        return () => {
+            channel.stopListening('.whiteboard.updated');
+            channel.stopListening('.whiteboard.chat.sent');
+            channel.stopListening('.session.started');
+            channel.stopListening('.session.completed');
+            echo.leave(`whiteboard.${session.id}`);
+        };
+    }, [editor, session.id, auth.user.id]);
+
+    // Load chat messages (initial load only — real-time updates via Echo)
     useEffect(() => {
         const fetchMessages = async () => {
             try {
@@ -297,10 +339,6 @@ export default function WhiteboardRoom({ session, isTutor }: PageProps) {
             }
         };
         fetchMessages();
-
-        // Poll messages every 5s
-        const interval = setInterval(fetchMessages, 5000);
-        return () => clearInterval(interval);
     }, [session.id]);
 
     // Scroll chat to bottom

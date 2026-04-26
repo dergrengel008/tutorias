@@ -41,11 +41,13 @@ services:
             MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@tutoriaapp.com}
             MAIL_FROM_NAME: "${APP_NAME:-TutoriaApp}"
 
-            BROADCAST_DRIVER: ${BROADCAST_DRIVER:-log}
-            PUSHER_APP_ID: ${PUSHER_APP_ID:-}
-            PUSHER_APP_KEY: ${PUSHER_APP_KEY:-}
-            PUSHER_APP_SECRET: ${PUSHER_APP_SECRET:-}
-            PUSHER_HOST: ${PUSHER_HOST:-api.pusherapp.com}
+            BROADCAST_DRIVER: ${BROADCAST_DRIVER:-pusher}
+            PUSHER_APP_ID: ${PUSHER_APP_ID:-tutoria-app}
+            PUSHER_APP_KEY: ${PUSHER_APP_KEY:-tutoria-app-key}
+            PUSHER_APP_SECRET: ${PUSHER_APP_SECRET:-tutoria-app-secret}
+            PUSHER_HOST: soketi
+            PUSHER_PORT: 6001
+            PUSHER_SCHEME: http
 
             SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost}
         volumes:
@@ -56,6 +58,8 @@ services:
                 condition: service_healthy
             redis:
                 condition: service_healthy
+            soketi:
+                condition: service_started
         networks:
             - tutoria-app
 
@@ -130,6 +134,23 @@ services:
         ports:
             - "5173:5173"
         command: sh -c "npm install && npm run dev"
+        networks:
+            - tutoria-app
+
+    # ── Soketi WebSocket Server ──────────────────────────
+    soketi:
+        image: 'quay.io/soketi/soketi:latest-1.6'
+        container_name: tutoria-soketi
+        restart: unless-stopped
+        ports:
+            - "${SOKETI_PORT:-6001}:6001"
+            - "${SOKETI_METRICS_PORT:-9601}:9601"
+        environment:
+            SOKETI_DEFAULT_APP_ID: "${PUSHER_APP_ID:-tutoria-app}"
+            SOKETI_DEFAULT_APP_KEY: "${PUSHER_APP_KEY:-tutoria-app-key}"
+            SOKETI_DEFAULT_APP_SECRET: "${PUSHER_APP_SECRET:-tutoria-app-secret}"
+            SOKETI_DEFAULT_APP_ENABLE_CLIENT_MESSAGES: "true"
+            SOKETI_DEBUG: "true"
         networks:
             - tutoria-app
 

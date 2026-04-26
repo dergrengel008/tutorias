@@ -10,6 +10,7 @@ use Inertia\Inertia;
 use App\Models\User;
 use App\Models\TutorProfile;
 use App\Models\StudentProfile;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
@@ -128,5 +129,79 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    // ─── Mobile API Auth Methods ──────────────────────────────────────
+
+    public function apiLogin(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+            'device_name' => 'string',
+        ]);
+
+        if (!auth()->attempt($credentials)) {
+            return response()->json([
+                'message' => 'Credenciales inválidas.',
+            ], 401);
+        }
+
+        $user = auth()->user();
+
+        if (!$user->is_active) {
+            auth()->logout();
+            return response()->json([
+                'message' => 'Tu cuenta ha sido desactivada.',
+            ], 403);
+        }
+
+        $token = $user->createToken($request->device_name ?? 'mobile')->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
+        ]);
+    }
+
+    public function apiRegister(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'role' => 'required|in:student,tutor',
+            'phone' => 'nullable|string|max:20',
+            'city' => 'nullable|string|max:100',
+            'country' => 'nullable|string|max:100',
+        ]);
+
+        $user = User::create([
+            'name'     => $validated['name'],
+            'email'    => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role'     => $validated['role'],
+            'phone'    => $validated['phone'] ?? null,
+            'city'     => $validated['city'] ?? null,
+            'country'  => $validated['country'] ?? null,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        if ($validated['role'] === 'tutor') {
+            $user->tutorProfile()->create([
+                'status' => 'pending',
+                'is_approved' => false,
+            ]);
+        } else {
+            $user->studentProfile()->create();
+        }
+
+        $token = $user->createToken('mobile')->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
+        ], 201);
     }
 }

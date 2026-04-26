@@ -1,0 +1,20 @@
+<?php
+return [
+    'login' => 'Iniciar Sesión',
+    'register' => 'Registrarse',
+    'email' => 'Correo Electrónico',
+    'password' => 'Contraseña',
+    'confirm_password' => 'Confirmar Contraseña',
+    'name' => 'Nombre Completo',
+    'remember_me' => 'Recordarme',
+    'forgot_password' => '¿Olvidaste tu contraseña?',
+    'reset_password' => 'Restablecer Contraseña',
+    'login_title' => 'Iniciar Sesión',
+    'register_title' => 'Crear Cuenta',
+    'student' => 'Estudiante',
+    'tutor' => 'Tutor',
+    'select_role' => 'Selecciona tu rol',
+    'phone' => 'Teléfono',
+    'city' => 'Ciudad',
+    'country' => 'País',
+];

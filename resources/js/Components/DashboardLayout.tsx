@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import FlashMessage from './FlashMessage';
 import Avatar from './Avatar';
+import LanguageSwitcher from './LanguageSwitcher';
 import StarRating from './StarRating';
 import type { User as UserType, TutorProfile } from '@/types';
 import { route } from '@/route';
@@ -371,6 +372,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     <div className="flex-1" />
 
                     <div className="flex items-center gap-2">
+                        <LanguageSwitcher />
                         <Link
                             href={route('notifications.index')}
                             className="relative flex items-center justify-center rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100"

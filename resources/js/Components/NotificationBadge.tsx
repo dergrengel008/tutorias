@@ -37,6 +37,34 @@ export default function NotificationBadge() {
         };
     }, [user]);
 
+    // Real-time notification listener
+    useEffect(() => {
+        if (!user || !(window as any).Echo) return;
+
+        const echo = (window as any).Echo;
+        const userId = (user as { id: number }).id;
+        const channel = echo.private(`notifications.${userId}`);
+
+        channel.listen('.notification.received', () => {
+            fetchUnreadCount();
+        });
+
+        channel.listen('.review.submitted', () => {
+            fetchUnreadCount();
+        });
+
+        channel.listen('.tutor.approved', () => {
+            fetchUnreadCount();
+        });
+
+        return () => {
+            channel.stopListening('.notification.received');
+            channel.stopListening('.review.submitted');
+            channel.stopListening('.tutor.approved');
+            echo.leave(`notifications.${userId}`);
+        };
+    }, [user]);
+
     useEffect(() => {
         if (unreadCount > 0 && unreadCount !== prevCount.current) {
             setPulsing(true);

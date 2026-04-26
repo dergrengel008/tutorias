@@ -34,6 +34,35 @@ class AdminController extends Controller
                 ? Token::where('transaction_type', 'session_payment')->sum('quantity')
                 : 0,
             'pendingPayments' => PaymentReceipt::where('status', 'pending')->count(),
+
+            // New analytics metrics
+            'avg_session_rating' => round(Review::where('type', 'review')->avg('rating') ?? 0, 1),
+            'most_popular_specialty' => \App\Models\Specialty::withCount(['tutorProfiles as active_tutors' => function($q) {
+                $q->where('status', 'approved');
+            }])->orderByDesc('active_tutors')->first(),
+            'top_earner' => TutorProfile::approved()
+                ->select('id', 'user_id')
+                ->withSum(['tokens as total_earned' => function($q) {
+                    $q->where('transaction_type', 'session_payment');
+                }], 'quantity')
+                ->with('user:id,name')
+                ->orderByDesc('tokens_total_earned_sum_quantity')
+                ->first(),
+            'active_sessions_this_week' => TutoringSession::whereBetween('scheduled_at', [
+                now()->startOfWeek(), now()->endOfWeek()
+            ])->whereIn('status', ['scheduled', 'in_progress'])->count(),
+            'completion_rate' => TutoringSession::whereIn('status', ['completed', 'cancelled'])->count() > 0
+                ? round(TutoringSession::where('status', 'completed')->count() /
+                    TutoringSession::whereIn('status', ['completed', 'cancelled'])->count() * 100, 1)
+                : 0,
+            'token_economy' => [
+                'total_tokens_purchased' => Token::whereIn('transaction_type', ['purchase', 'admin_credit'])->sum('quantity'),
+                'total_tokens_spent' => Token::whereIn('transaction_type', ['session_payment', 'thesis_review'])->sum('quantity'),
+                'pending_withdrawals' => \App\Models\Withdrawal::where('status', 'pending')->sum('amount'),
+            ],
+            'weekly_new_users' => User::whereBetween('created_at', [
+                now()->startOfWeek(), now()->endOfWeek()
+            ])->count(),
         ];
 
         $recentSessions = TutoringSession::with(['tutorProfile.user', 'student'])
