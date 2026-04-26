@@ -1,9 +1,59 @@
+# Git
 .git
 .gitignore
-vendor
-node_modules
-storage/logs/*
-bootstrap/cache/*
+.gitattributes
+
+# Docker
+.dockerignore
+docker-compose.yml
+Dockerfile
+docker/
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
 .env
-.env.backup
-*.zip
+.env.local
+.env.*.local
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Vendor (installed during build)
+vendor
+
+# Public build output (rebuilt during build)
+public/build
+public/hot
+
+# Storage (mounted as volume)
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/cache/*
+storage/logs/*
+
+# Testing
+tests
+phpunit.xml
+.phpunit.result.cache
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE
+
+# Misc
+.editorconfig
+.styleci.yml
+phpstan.neon
+pint.json

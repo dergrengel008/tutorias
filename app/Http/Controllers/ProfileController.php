@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class ProfileController extends Controller
 {
@@ -15,32 +15,28 @@ class ProfileController extends Controller
      */
     public function uploadAvatar(Request $request)
     {
-        $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
-        ], [
-            'avatar.required'  => 'Debes seleccionar una imagen.',
-            'avatar.image'     => 'El archivo debe ser una imagen.',
-            'avatar.max'       => 'La imagen no debe superar los 2MB.',
-            'avatar.mimes'     => 'El formato debe ser JPEG, PNG, JPG o WebP.',
-        ]);
-
         $user = Auth::user();
 
-        // Delete old avatar if exists
+        $request->validate([
+            'avatar' => 'required|image|max:2048|mimes:jpeg,png,webp',
+        ]);
+
+        // Delete old avatar if it exists (use raw value, not the URL accessor)
         if ($user->getRawOriginal('avatar')) {
             Storage::disk('public')->delete($user->getRawOriginal('avatar'));
         }
 
-        $avatar = $request->file('avatar');
-        $filename = 'avatars/' . $user->id . '-' . time() . '.' . $avatar->getClientOriginalExtension();
+        $extension = $request->avatar->getClientOriginalExtension();
+        $filename = "avatars/{$user->id}-" . time() . ".{$extension}";
 
-        $avatar->storeAs('public', $filename);
+        Storage::disk('public')->put($filename, $request->avatar->getContent());
 
-        $user->update([
-            'avatar' => $filename,
+        $user->avatar = $filename;
+        $user->save();
+
+        return response()->json([
+            'avatar_url' => $user->avatar_url,
         ]);
-
-        return back()->with('success', 'Foto de perfil actualizada exitosamente.');
     }
 
     /**
@@ -49,33 +45,21 @@ class ProfileController extends Controller
     public function changePassword(Request $request)
     {
         $request->validate([
-            'current_password'      => 'required|string',
-            'password'              => 'required|string|min:8|confirmed',
-            'password_confirmation' => 'required|string|min:8',
-        ], [
-            'current_password.required' => 'Debes ingresar tu contraseña actual.',
-            'password.required'         => 'Debes ingresar la nueva contraseña.',
-            'password.min'              => 'La nueva contraseña debe tener al menos 8 caracteres.',
-            'password.confirmed'        => 'La confirmación de contraseña no coincide.',
+            'current_password' => 'required',
+            'password' => 'required|min:8|confirmed',
         ]);
 
         $user = Auth::user();
 
-        // Verify current password
-        if (! Hash::check($request->input('current_password'), $user->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return back()->withErrors([
                 'current_password' => 'La contraseña actual no es correcta.',
             ]);
         }
 
-        // Update password
-        $user->update([
-            'password' => Hash::make($request->input('password')),
-        ]);
+        $user->password = Hash::make($request->password);
+        $user->save();
 
-        // Invalidate other sessions for security (optional)
-        // Auth::logoutOtherDevices($request->input('password'));
-
-        return back()->with('success', 'Contraseña cambiada exitosamente.');
+        return back()->with('success', 'Contraseña actualizada correctamente.');
     }
 }

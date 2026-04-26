@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\PlatformSetting;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -10,63 +11,87 @@ class PlatformSettingTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_can_get_platform_setting_by_key(): void
+    public function test_can_get_setting_value(): void
     {
         PlatformSetting::create([
-            'key' => 'site_name',
-            'value' => json_encode('Tutoria'),
+            'key' => 'test_setting',
+            'value' => 'test_value',
             'type' => 'string',
-            'group' => 'general',
         ]);
 
-        $result = PlatformSetting::get('site_name');
-
-        // The value is cast to 'array', so json_encode string becomes array after casting
-        $this->assertNotNull($result);
+        $this->assertEquals('test_value', PlatformSetting::get('test_setting'));
     }
 
-    public function test_can_update_platform_setting(): void
+    public function test_get_returns_default_when_not_found(): void
+    {
+        $this->assertEquals('default_val', PlatformSetting::get('nonexistent', 'default_val'));
+    }
+
+    public function test_can_set_setting_value(): void
+    {
+        PlatformSetting::set('new_key', 'new_value');
+
+        $this->assertDatabaseHas('platform_settings', [
+            'key' => 'new_key',
+            'value' => 'new_value',
+        ]);
+    }
+
+    public function test_set_updates_existing_setting(): void
     {
         PlatformSetting::create([
-            'key' => 'commission_rate',
-            'value' => json_encode('15'),
+            'key' => 'update_key',
+            'value' => 'old_value',
             'type' => 'string',
-            'group' => 'payments',
         ]);
 
-        $setting = PlatformSetting::where('key', 'commission_rate')->first();
-        $setting->update([
-            'value' => json_encode('20'),
-        ]);
+        PlatformSetting::set('update_key', 'new_value');
 
-        $setting->refresh();
-
-        // Verify the update was persisted
-        $this->assertEquals('20', json_encode($setting->value) ?: $setting->value);
+        $this->assertEquals('new_value', PlatformSetting::get('update_key'));
     }
 
-    public function test_default_commission_rate_exists(): void
+    public function test_get_casts_integer_type(): void
     {
-        // Seed a default commission rate setting
         PlatformSetting::create([
-            'key' => 'commission_rate',
-            'value' => json_encode('15'),
-            'type' => 'string',
-            'group' => 'payments',
+            'key' => 'int_setting',
+            'value' => '42',
+            'type' => 'integer',
         ]);
 
-        $setting = PlatformSetting::where('key', 'commission_rate')->first();
-
-        $this->assertNotNull($setting);
-        $this->assertEquals('commission_rate', $setting->key);
-        $this->assertEquals('payments', $setting->group);
-        $this->assertEquals('string', $setting->type);
+        $this->assertSame(42, PlatformSetting::get('int_setting'));
     }
 
-    public function test_get_returns_default_when_key_not_found(): void
+    public function test_get_casts_boolean_type(): void
     {
-        $result = PlatformSetting::get('nonexistent_key', 'fallback_value');
+        PlatformSetting::create([
+            'key' => 'bool_setting',
+            'value' => '1',
+            'type' => 'boolean',
+        ]);
 
-        $this->assertEquals('fallback_value', $result);
+        $this->assertTrue(PlatformSetting::get('bool_setting'));
+    }
+
+    public function test_get_casts_float_type(): void
+    {
+        PlatformSetting::create([
+            'key' => 'float_setting',
+            'value' => '3.14',
+            'type' => 'float',
+        ]);
+
+        $this->assertEquals(3.14, PlatformSetting::get('float_setting'));
+    }
+
+    public function test_get_casts_json_type(): void
+    {
+        PlatformSetting::create([
+            'key' => 'json_setting',
+            'value' => '{"key":"value"}',
+            'type' => 'json',
+        ]);
+
+        $result = PlatformSetting::get('json_setting');
+        $this->assertEquals(['key' => 'value'], $result);
     }
 }

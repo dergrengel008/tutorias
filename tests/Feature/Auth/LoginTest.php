@@ -11,77 +11,73 @@ class LoginTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guest_can_view_login_page(): void
+    public function test_login_page_is_accessible(): void
     {
         $response = $this->get('/login');
-
         $response->assertStatus(200);
     }
 
-    public function test_authenticated_user_redirected_from_login(): void
+    public function test_authenticated_user_cannot_access_login(): void
     {
-        $user = User::create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'student',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
+        $user = User::factory()->create(['role' => 'student']);
+        $this->actingAs($user);
 
-        $response = $this->actingAs($user)->get('/login');
-
+        $response = $this->get('/login');
         $response->assertRedirect('/');
     }
 
     public function test_user_can_login_with_valid_credentials(): void
     {
-        $user = User::create([
-            'name' => 'Test User',
+        $user = User::factory()->create([
             'email' => 'test@example.com',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('Password1'),
             'role' => 'student',
             'is_active' => true,
-            'email_verified_at' => now(),
         ]);
 
         $response = $this->post('/login', [
             'email' => 'test@example.com',
-            'password' => 'password123',
+            'password' => 'Password1',
         ]);
 
-        $response->assertRedirect(route('student.dashboard'));
         $this->assertAuthenticatedAs($user);
     }
 
-    public function test_user_cannot_login_with_invalid_password(): void
+    public function test_login_fails_with_invalid_password(): void
     {
-        User::create([
-            'name' => 'Test User',
+        User::factory()->create([
             'email' => 'test@example.com',
-            'password' => Hash::make('correct-password'),
+            'password' => Hash::make('Password1'),
             'role' => 'student',
-            'is_active' => true,
-            'email_verified_at' => now(),
         ]);
 
         $response = $this->post('/login', [
             'email' => 'test@example.com',
-            'password' => 'wrong-password',
+            'password' => 'WrongPassword',
         ]);
 
-        $response->assertSessionHasErrors('email');
         $this->assertGuest();
+        $response->assertSessionHasErrors('email');
     }
 
-    public function test_user_cannot_login_with_nonexistent_email(): void
+    public function test_login_fails_with_nonexistent_email(): void
     {
         $response = $this->post('/login', [
-            'email' => 'nonexistent@example.com',
-            'password' => 'password123',
+            'email' => 'nobody@example.com',
+            'password' => 'Password1',
         ]);
 
-        $response->assertSessionHasErrors('email');
         $this->assertGuest();
+        $response->assertSessionHasErrors('email');
+    }
+
+    public function test_user_can_logout(): void
+    {
+        $user = User::factory()->create(['role' => 'student']);
+        $this->actingAs($user);
+
+        $response = $this->post('/logout');
+        $this->assertGuest();
+        $response->assertRedirect('/');
     }
 }

@@ -14,6 +14,10 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\WhiteboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\SettingController;
+use App\Http\Controllers\WithdrawalController;
+use App\Http\Controllers\ThesisReviewController;
+use App\Http\Controllers\MessageController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -59,6 +63,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/tokens', [TokenController::class, 'index'])->name('tokens.index');
         Route::post('/tokens/topup', [TokenController::class, 'requestTopUp'])->name('tokens.topup');
         Route::get('/find-tutors', [StudentController::class, 'findTutors'])->name('find-tutors');
+
+        // Student Thesis routes
+        Route::get('/thesis', [ThesisReviewController::class, 'studentIndex'])->name('thesis.index');
+        Route::get('/thesis/create', [ThesisReviewController::class, 'studentCreate'])->name('thesis.create');
+        Route::post('/thesis', [ThesisReviewController::class, 'studentStore'])->name('thesis.store');
+        Route::get('/thesis/{id}', [ThesisReviewController::class, 'studentShow'])->name('thesis.show');
+        Route::post('/thesis/{id}/request-revision', [ThesisReviewController::class, 'studentRequestRevision'])->name('thesis.request-revision');
+        Route::post('/thesis/{id}/rate', [ThesisReviewController::class, 'studentRate'])->name('thesis.rate');
+        Route::post('/thesis/{id}/cancel', [ThesisReviewController::class, 'studentCancel'])->name('thesis.cancel');
     });
 
     // Tutor routes (con middleware approved.tutor)
@@ -78,6 +91,16 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/students', [TutorController::class, 'myStudents'])->name('students.index');
         Route::get('/students/{id}', [TutorController::class, 'showStudent'])->name('students.show');
         Route::get('/earnings', [TutorController::class, 'earnings'])->name('earnings.index');
+
+        // Tutor thesis review routes
+        Route::get('/thesis', [ThesisReviewController::class, 'tutorIndex'])->name('thesis.index');
+        Route::get('/thesis/{id}', [ThesisReviewController::class, 'tutorShow'])->name('thesis.show');
+        Route::post('/thesis/{id}/accept', [ThesisReviewController::class, 'tutorAccept'])->name('thesis.accept');
+        Route::post('/thesis/{id}/feedback', [ThesisReviewController::class, 'tutorSubmitFeedback'])->name('thesis.feedback');
+        Route::get('/thesis/{id}/download', [ThesisReviewController::class, 'tutorDownload'])->name('thesis.download');
+
+        // Tutor withdrawal routes
+        Route::post('/withdrawals', [WithdrawalController::class, 'store'])->name('withdrawals.store');
     });
 
     // Admin routes
@@ -108,6 +131,19 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/payment-receipts', [AdminController::class, 'paymentReceipts'])->name('payment-receipts.index');
         Route::post('/payment-receipts/{id}/approve', [TokenController::class, 'approveReceipt'])->name('payment-receipts.approve');
         Route::post('/payment-receipts/{id}/reject', [TokenController::class, 'rejectReceipt'])->name('payment-receipts.reject');
+
+        // Admin thesis management
+        Route::get('/thesis', [ThesisReviewController::class, 'adminIndex'])->name('thesis.index');
+        Route::post('/thesis/{id}/cancel', [ThesisReviewController::class, 'adminCancel'])->name('thesis.cancel');
+
+        // Admin withdrawals management
+        Route::get('/withdrawals', [WithdrawalController::class, 'index'])->name('withdrawals.index');
+        Route::post('/withdrawals/{id}/approve', [WithdrawalController::class, 'approve'])->name('withdrawals.approve');
+        Route::post('/withdrawals/{id}/reject', [WithdrawalController::class, 'reject'])->name('withdrawals.reject');
+
+        // Admin platform settings
+        Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+        Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
     });
 
     // Shared authenticated routes
@@ -120,6 +156,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
     Route::get('/whiteboard/{sessionId}', [WhiteboardController::class, 'show'])->name('whiteboard.show');
+
+    // Messaging routes
+    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::get('/messages/{id}', [MessageController::class, 'show'])->name('messages.show');
+    Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
+    Route::post('/conversations', [MessageController::class, 'startConversation'])->name('conversations.start');
+    Route::delete('/messages/{id}', [MessageController::class, 'destroy'])->name('messages.destroy');
 });
 
 // Whiteboard API routes (for real-time sync)

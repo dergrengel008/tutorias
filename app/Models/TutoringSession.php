@@ -28,6 +28,9 @@ class TutoringSession extends Model
         'status',
         'whiteboard_data',
         'meeting_link',
+        'tokens_cost',
+        'tutor_earned_tokens',
+        'specialty_id',
     ];
 
     /**
