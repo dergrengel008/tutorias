@@ -31,7 +31,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY . .
 
 # Instalar dependencias PHP (producción)
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer update --no-dev --optimize-autoloader --no-interaction --no-scripts \
+    && composer dump-autoload --optimize
 
 # Instalar dependencias Node y compilar
 RUN npm install --ignore-scripts \
