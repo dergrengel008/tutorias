@@ -22,19 +22,24 @@ class TutorProfile extends Model
         'id_card_image',
         'title_document',
         'selfie_image',
+        'status',
         'is_approved',
-        'approval_date',
         'rejection_reason',
+        'approval_date',
         'average_rating',
         'total_sessions',
         'total_warnings',
-        'status',
     ];
 
     protected $hidden = [
         'id_card_image',
         'title_document',
         'selfie_image',
+    ];
+
+    protected $attributes = [
+        'status' => 'pending',
+        'is_approved' => false,
     ];
 
     protected function casts(): array
@@ -55,7 +60,8 @@ class TutorProfile extends Model
 
     public function specialties(): BelongsToMany
     {
-        return $this->belongsToMany(Specialty::class, 'tutor_specialty')->withTimestamps();
+        return $this->belongsToMany(Specialty::class, 'tutor_specialty')
+            ->withTimestamps();
     }
 
     public function courses(): HasMany
@@ -73,24 +79,57 @@ class TutorProfile extends Model
         return $this->hasMany(Review::class);
     }
 
+    public function tokens(): HasMany
+    {
+        return $this->hasMany(Token::class, 'user_id', 'user_id');
+    }
+
     public function getIdCardImageUrlAttribute(): ?string
     {
-        return $this->id_card_image ? Storage::url($this->id_card_image) : null;
+        if ($this->id_card_image) {
+            return Storage::url($this->id_card_image);
+        }
+        return null;
     }
 
     public function getTitleDocumentUrlAttribute(): ?string
     {
-        return $this->title_document ? Storage::url($this->title_document) : null;
+        if ($this->title_document) {
+            return Storage::url($this->title_document);
+        }
+        return null;
     }
 
     public function getSelfieImageUrlAttribute(): ?string
     {
-        return $this->selfie_image ? Storage::url($this->selfie_image) : null;
+        if ($this->selfie_image) {
+            return Storage::url($this->selfie_image);
+        }
+        return null;
     }
 
-    public function scopeApproved($query) { return $query->where('status', 'approved'); }
-    public function scopePending($query) { return $query->where('status', 'pending'); }
-    public function scopeRejected($query) { return $query->where('status', 'rejected'); }
-    public function scopeSuspended($query) { return $query->where('status', 'suspended'); }
-    public function scopeActive($query) { return $query->where('status', 'approved'); }
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    public function scopeRejected($query)
+    {
+        return $query->where('status', 'rejected');
+    }
+
+    public function scopeSuspended($query)
+    {
+        return $query->where('status', 'suspended');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'approved');
+    }
 }
