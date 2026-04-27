@@ -2,34 +2,30 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PlatformSetting extends Model
 {
-    protected $fillable = ['key', 'value', 'type', 'group'];
+    use HasFactory;
 
-    /**
-     * Get a setting value by key, with type casting.
-     */
-    public static function get(string $key, $default = null)
+    protected $fillable = [
+        'key',
+        'value',
+    ];
+
+    public static function get(string $key, ?string $default = null): ?string
     {
         $setting = static::where('key', $key)->first();
-        if (!$setting) return $default;
 
-        return match($setting->type) {
-            'integer' => (int) $setting->value,
-            'float' => (float) $setting->value,
-            'boolean' => in_array($setting->value, ['1', 'true', true]),
-            'json' => json_decode($setting->value, true),
-            default => $setting->value,
-        };
+        return $setting ? $setting->value : $default;
     }
 
-    /**
-     * Set a setting value by key (create or update).
-     */
-    public static function set(string $key, $value): void
+    public static function set(string $key, string $value): void
     {
-        static::updateOrCreate(['key' => $key], ['value' => is_array($value) ? json_encode($value) : (string) $value]);
+        static::updateOrCreate(
+            ['key' => $key],
+            ['value' => $value]
+        );
     }
 }

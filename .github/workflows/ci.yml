@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
@@ -7,44 +7,43 @@ on:
     branches: [main]
 
 jobs:
-  php-tests:
+  tests-php:
+    name: PHP Tests
     runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:16
         env:
           POSTGRES_DB: tutoria_test
-          POSTGRES_USER: tester
-          POSTGRES_PASSWORD: secret
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd="pg_isready -U test_user"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: pdo_pgsql, mbstring, xml, bcmath, curl, zip
+          extensions: dom, curl, libxml, mbstring, zip, pgsql, pdo_pgsql
           coverage: xdebug
 
       - name: Copy .env
         run: cp .env.example .env
 
       - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        run: composer install --no-interaction --optimize-autoloader
 
       - name: Generate application key
         run: php artisan key:generate
-
-      - name: Directory permissions
-        run: chmod -R 777 storage bootstrap/cache
 
       - name: Run migrations
         env:
@@ -52,8 +51,8 @@ jobs:
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
           DB_DATABASE: tutoria_test
-          DB_USERNAME: tester
-          DB_PASSWORD: secret
+          DB_USERNAME: test_user
+          DB_PASSWORD: test_pass
         run: php artisan migrate --force
 
       - name: Execute tests
@@ -62,14 +61,17 @@ jobs:
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
           DB_DATABASE: tutoria_test
-          DB_USERNAME: tester
-          DB_PASSWORD: secret
-        run: php artisan test
+          DB_USERNAME: test_user
+          DB_PASSWORD: test_pass
+        run: vendor/bin/phpunit --colors=never
 
-  node-build:
+  tests-frontend:
+    name: Frontend Tests
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -78,10 +80,22 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci
 
-      - name: TypeScript check
-        run: npx tsc --noEmit || true
+      - name: Type check
+        run: npx tsc --noEmit
 
       - name: Build
         run: npm run build
+
+  deploy-render:
+    name: Deploy to Render
+    needs: [tests-php, tests-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Trigger Render Deploy
+        run: |
+          echo "Deploy triggered by push to main"
+          echo "Render auto-deploys on push to main branch"
+          echo "Visit: https://dashboard.render.com for deploy status"
