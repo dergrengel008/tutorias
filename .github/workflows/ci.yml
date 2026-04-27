@@ -20,18 +20,10 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U test_user"
+          --health-cmd="pg_isready -U test_user -d tutoria_test"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-
-    env:
-      DB_CONNECTION: pgsql
-      DB_HOST: 127.0.0.1
-      DB_PORT: 5432
-      DB_DATABASE: tutoria_test
-      DB_USERNAME: test_user
-      DB_PASSWORD: test_pass
 
     steps:
       - name: Checkout code
@@ -47,6 +39,15 @@ jobs:
       - name: Copy .env
         run: cp .env.example .env
 
+      - name: Fix .env database config
+        run: |
+          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
+          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/DB_PORT=.*/DB_PORT=5432/' .env
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=tutoria_test/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=test_user/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=test_pass/' .env
+
       - name: Install Composer dependencies
         run: composer update --prefer-dist --no-progress
 
@@ -58,10 +59,16 @@ jobs:
 
       - name: Wait for PostgreSQL
         run: |
-          until pg_isready -h 127.0.0.1 -U test_user -d tutoria_test; do
-            echo "Waiting for PostgreSQL..."
+          for i in {1..30}; do
+            if pg_isready -h 127.0.0.1 -U test_user -d tutoria_test > /dev/null 2>&1; then
+              echo "PostgreSQL is ready!"
+              exit 0
+            fi
+            echo "Attempt $i: Waiting for PostgreSQL..."
             sleep 2
           done
+          echo "PostgreSQL failed to start"
+          exit 1
         env:
           PGPASSWORD: test_pass
 
