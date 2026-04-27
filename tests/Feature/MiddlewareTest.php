@@ -20,30 +20,29 @@ class MiddlewareTest extends TestCase
 
     public function test_guest_cannot_access_admin_routes(): void
     {
-        $response = $this->get('/dashboard');
-
+        $response = $this->get('/admin/dashboard');
         $response->assertRedirect('/login');
     }
 
     public function test_student_cannot_access_admin_routes(): void
     {
-        $student = User::factory()->create(['role' => 'student']);
+        $student = User::factory()->create([
+            'role' => 'student',
+            'is_active' => true,
+        ]);
         StudentProfile::create([
             'user_id' => $student->id,
             'education_level' => 'Universitario',
         ]);
 
         $response = $this->actingAs($student)->get('/admin/dashboard');
-
         $response->assertStatus(403);
     }
 
     public function test_admin_can_access_admin_routes(): void
     {
         $admin = User::where('email', 'admin@tutoria.com')->first();
-
-        $response = $this->actingAs($admin)->get('/dashboard');
-
+        $response = $this->actingAs($admin)->get('/admin/dashboard');
         $response->assertStatus(200);
     }
 
@@ -58,7 +57,6 @@ class MiddlewareTest extends TestCase
             'hourly_rate' => 20.00,
         ]);
 
-        // Default status is 'pending'
         $this->assertEquals('pending', $profile->status);
         $this->assertFalse($profile->is_approved);
     }

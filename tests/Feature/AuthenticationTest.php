@@ -25,33 +25,28 @@ class AuthenticationTest extends TestCase
         ]);
     }
 
-    public function test_guest_cannot_access_protected_routes(): void
+    public function test_guest_redirected_from_admin_dashboard(): void
     {
-        $response = $this->get('/dashboard');
-
+        $response = $this->get('/admin/dashboard');
         $response->assertRedirect('/login');
     }
 
-    public function test_admin_can_access_dashboard(): void
+    public function test_admin_can_access_admin_dashboard(): void
     {
         $admin = User::where('email', 'admin@tutoria.com')->first();
-
-        $response = $this->actingAs($admin)->get('/dashboard');
-
+        $response = $this->actingAs($admin)->get('/admin/dashboard');
         $response->assertStatus(200);
     }
 
     public function test_user_password_is_hashed(): void
     {
         $admin = User::where('email', 'admin@tutoria.com')->first();
-
         $this->assertTrue(Hash::check('password', $admin->password));
     }
 
     public function test_user_role_methods(): void
     {
         $admin = User::where('email', 'admin@tutoria.com')->first();
-
         $this->assertTrue($admin->isAdmin());
         $this->assertFalse($admin->isStudent());
         $this->assertFalse($admin->isTutor());

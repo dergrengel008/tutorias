@@ -3,8 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use App\Models\Specialty;
 
 class SpecialtySeeder extends Seeder
@@ -27,7 +25,6 @@ class SpecialtySeeder extends Seeder
             ['name' => 'Derecho',       'description' => 'Derecho civil, penal, laboral, mercantil, constitucional e internacional.',                  'icon' => 'scale'],
             ['name' => 'Medicina',      'description' => 'Anatomía, fisiología, farmacología, patología, clínica y especialidades médicas.',           'icon' => 'heart-pulse'],
             ['name' => 'Ingeniería',    'description' => 'Ingeniería civil, electrónica, industrial, mecánica, de sistemas y ambiental.',              'icon' => 'wrench'],
-            ['name' => 'Arquitectura',  'description' => 'Diseño arquitectónico, urbanismo, historia de la arquitectura, planificación y construcción.', 'icon' => 'building'],
         ];
 
         foreach ($specialties as $specialty) {

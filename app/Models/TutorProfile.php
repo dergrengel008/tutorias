@@ -13,11 +13,6 @@ class TutorProfile extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'user_id',
         'professional_title',
@@ -27,24 +22,21 @@ class TutorProfile extends Model
         'id_card_image',
         'title_document',
         'selfie_image',
+        'is_approved',
+        'approval_date',
+        'rejection_reason',
+        'average_rating',
+        'total_sessions',
+        'total_warnings',
+        'status',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'id_card_image',
         'title_document',
         'selfie_image',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -55,8 +47,6 @@ class TutorProfile extends Model
             'status' => 'string',
         ];
     }
-
-    // ─── Relationships ───────────────────────────────────────────────
 
     public function user(): BelongsTo
     {
@@ -84,36 +74,20 @@ class TutorProfile extends Model
         return $this->hasMany(Review::class);
     }
 
-    // ─── Accessors ───────────────────────────────────────────────────
-
     public function getIdCardImageUrlAttribute(): ?string
     {
-        if ($this->id_card_image) {
-            return Storage::url($this->id_card_image);
-        }
-
-        return null;
+        return $this->id_card_image ? Storage::url($this->id_card_image) : null;
     }
 
     public function getTitleDocumentUrlAttribute(): ?string
     {
-        if ($this->title_document) {
-            return Storage::url($this->title_document);
-        }
-
-        return null;
+        return $this->title_document ? Storage::url($this->title_document) : null;
     }
 
     public function getSelfieImageUrlAttribute(): ?string
     {
-        if ($this->selfie_image) {
-            return Storage::url($this->selfie_image);
-        }
-
-        return null;
+        return $this->selfie_image ? Storage::url($this->selfie_image) : null;
     }
-
-    // ─── Scopes ──────────────────────────────────────────────────────
 
     public function scopeApproved($query)
     {
