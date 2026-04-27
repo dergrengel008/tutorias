@@ -39,7 +39,7 @@ jobs:
       - name: Copy .env
         run: cp .env.example .env
 
-      - name: Fix .env database config
+      - name: Override .env for CI PostgreSQL
         run: |
           sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
           sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
@@ -47,6 +47,7 @@ jobs:
           sed -i 's/DB_DATABASE=.*/DB_DATABASE=tutoria_test/' .env
           sed -i 's/DB_USERNAME=.*/DB_USERNAME=test_user/' .env
           sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=test_pass/' .env
+          cat .env | grep DB_
 
       - name: Install Composer dependencies
         run: composer update --prefer-dist --no-progress

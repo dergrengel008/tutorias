@@ -9,9 +9,6 @@ use App\Models\Specialty;
 
 class SpecialtySeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $specialties = [
@@ -30,16 +27,15 @@ class SpecialtySeeder extends Seeder
             ['name' => 'Derecho',       'description' => 'Derecho civil, penal, laboral, mercantil, constitucional e internacional.',                  'icon' => 'scale'],
             ['name' => 'Medicina',      'description' => 'Anatomía, fisiología, farmacología, patología, clínica y especialidades médicas.',           'icon' => 'heart-pulse'],
             ['name' => 'Ingeniería',    'description' => 'Ingeniería civil, electrónica, industrial, mecánica, de sistemas y ambiental.',              'icon' => 'wrench'],
+            ['name' => 'Arquitectura',  'description' => 'Diseño arquitectónico, urbanismo, historia de la arquitectura, planificación y construcción.', 'icon' => 'building'],
         ];
 
         foreach ($specialties as $specialty) {
-            Specialty::firstOrCreate(
-                ['name' => $specialty['name']],
-                [
-                    'description' => $specialty['description'],
-                    'icon' => $specialty['icon'],
-                ]
-            );
+            Specialty::create([
+                'name'        => $specialty['name'],
+                'description' => $specialty['description'],
+                'icon'        => $specialty['icon'],
+            ]);
         }
     }
 }
