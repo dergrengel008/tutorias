@@ -173,7 +173,7 @@ class ThesisReviewTest extends TestCase
                 'file' => $file,
             ]);
 
-            $thesis = \\App\\Models\\ThesisReview::where('title', "Tesis {$level}")->first();
+            $thesis = \App\Models\ThesisReview::where('title', "Tesis {$level}")->first();
             $this->assertNotNull($thesis);
             $this->assertEquals($expectedCost, $thesis->tokens_cost);
         }
