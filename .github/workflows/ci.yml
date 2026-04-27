@@ -41,7 +41,7 @@ jobs:
         run: cp .env.example .env
 
       - name: Install Composer dependencies
-        run: composer update --no-interaction --optimize-autoloader --no-dev
+        run: composer update --no-interaction --optimize-autoloader
 
       - name: Generate application key
         run: php artisan key:generate
