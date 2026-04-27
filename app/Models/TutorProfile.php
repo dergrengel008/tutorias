@@ -88,28 +88,9 @@ class TutorProfile extends Model
         return $this->selfie_image ? Storage::url($this->selfie_image) : null;
     }
 
-    public function scopeApproved($query)
-    {
-        return $query->where('status', 'approved');
-    }
-
-    public function scopePending($query)
-    {
-        return $query->where('status', 'pending');
-    }
-
-    public function scopeRejected($query)
-    {
-        return $query->where('status', 'rejected');
-    }
-
-    public function scopeSuspended($query)
-    {
-        return $query->where('status', 'suspended');
-    }
-
-    public function scopeActive($query)
-    {
-        return $query->where('status', 'approved');
-    }
+    public function scopeApproved($query) { return $query->where('status', 'approved'); }
+    public function scopePending($query) { return $query->where('status', 'pending'); }
+    public function scopeRejected($query) { return $query->where('status', 'rejected'); }
+    public function scopeSuspended($query) { return $query->where('status', 'suspended'); }
+    public function scopeActive($query) { return $query->where('status', 'approved'); }
 }

@@ -36,7 +36,7 @@ jobs:
           extensions: pdo_pgsql, pgsql, mbstring, xml, curl, intl, bcmath
           coverage: xdebug
 
-      - name: Install system locale for Carbon es
+      - name: Install system locale
         run: sudo locale-gen es_ES.UTF-8
 
       - name: Copy .env
@@ -50,13 +50,15 @@ jobs:
           sed -i 's/DB_DATABASE=.*/DB_DATABASE=tutoria_test/' .env
           sed -i 's/DB_USERNAME=.*/DB_USERNAME=test_user/' .env
           sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=test_pass/' .env
-          cat .env | grep DB_
 
       - name: Install Composer dependencies
         run: composer update --prefer-dist --no-progress
 
       - name: Install NPM dependencies
         run: npm install
+
+      - name: Build frontend assets
+        run: npx vite build
 
       - name: Generate application key
         run: php artisan key:generate
@@ -69,7 +71,7 @@ jobs:
               exit 0
             fi
             echo "Attempt $i: Waiting for PostgreSQL..."
-              sleep 2
+            sleep 2
           done
           echo "PostgreSQL failed to start"
           exit 1
