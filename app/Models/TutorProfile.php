@@ -55,8 +55,7 @@ class TutorProfile extends Model
 
     public function specialties(): BelongsToMany
     {
-        return $this->belongsToMany(Specialty::class, 'tutor_specialty')
-            ->withTimestamps();
+        return $this->belongsToMany(Specialty::class, 'tutor_specialty')->withTimestamps();
     }
 
     public function courses(): HasMany
