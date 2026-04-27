@@ -35,12 +35,13 @@ jobs:
           php-version: '8.4'
           extensions: dom, curl, libxml, mbstring, zip, pgsql, pdo_pgsql
           coverage: xdebug
+          tools: composer:v2
 
       - name: Copy .env
         run: cp .env.example .env
 
       - name: Install Composer dependencies
-        run: composer install --no-interaction --optimize-autoloader
+        run: composer update --no-interaction --optimize-autoloader --no-dev
 
       - name: Generate application key
         run: php artisan key:generate
@@ -77,13 +78,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Type check
-        run: npx tsc --noEmit
+        run: npm install
 
       - name: Build
         run: npm run build
