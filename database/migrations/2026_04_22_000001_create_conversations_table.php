@@ -11,7 +11,8 @@ return new class extends Migration
         Schema::create('conversations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('tutor_user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('tutor_user_id')->nullable()->constrained('users')->onDelete('cascade');
+            $table->foreignId('tutor_profile_id')->nullable()->constrained('tutor_profiles')->onDelete('cascade');
             $table->timestamp('last_message_at')->nullable();
             $table->timestamps();
             $table->unique(['student_user_id', 'tutor_user_id']);
