@@ -10,6 +10,11 @@ class ThesisReview extends Model
 {
     use HasFactory;
 
+    protected $attributes = [
+        'status'      => 'pending',
+        'tokens_cost' => 0,
+    ];
+
     protected $fillable = [
         'student_user_id',
         'tutor_profile_id',
