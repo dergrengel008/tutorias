@@ -122,3 +122,19 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/whiteboard/{sessionId}', [WhiteboardController::class, 'show'])->name('whiteboard.show');
 });
 
+// Whiteboard API routes — JSON endpoints, NOT Inertia
+// Must live inside web.php for session auth, but exclude HandleInertiaRequests
+// so that raw JSON responses are returned correctly.
+use App\Http\Middleware\HandleInertiaRequests;
+
+Route::withoutMiddleware([HandleInertiaRequests::class])
+    ->middleware(['auth'])
+    ->prefix('api/whiteboard')
+    ->group(function () {
+        Route::get('/{sessionId}', [WhiteboardController::class, 'getData']);
+        Route::post('/{sessionId}', [WhiteboardController::class, 'update']);
+        Route::get('/{sessionId}/chat', [WhiteboardController::class, 'getChat']);
+        Route::post('/{sessionId}/chat', [WhiteboardController::class, 'sendChat']);
+    });
+
+
