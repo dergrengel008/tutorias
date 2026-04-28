@@ -14,33 +14,20 @@ class ThesisReview extends Model
         'student_user_id',
         'tutor_profile_id',
         'title',
-        'academic_level',
-        'subject_area',
-        'instructions',
+        'description',
         'file_path',
-        'original_filename',
         'status',
-        'tokens_cost',
-        'tutor_earned_tokens',
-        'current_round',
-        'max_rounds',
-        'final_rating',
-        'accepted_at',
-        'completed_at',
-        'deadline',
+        'tutor_feedback',
+        'rating',
+        'reviewed_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'accepted_at' => 'datetime',
-            'completed_at' => 'datetime',
-            'deadline' => 'datetime',
-            'final_rating' => 'integer',
-            'tokens_cost' => 'integer',
-            'tutor_earned_tokens' => 'integer',
-            'current_round' => 'integer',
-            'max_rounds' => 'integer',
+            'reviewed_at' => 'datetime',
+            'rating'      => 'decimal:2',
+            'status'      => 'string',
         ];
     }
 
@@ -52,5 +39,20 @@ class ThesisReview extends Model
     public function tutorProfile(): BelongsTo
     {
         return $this->belongsTo(TutorProfile::class);
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    public function scopeInProgress($query)
+    {
+        return $query->where('status', 'in_progress');
     }
 }

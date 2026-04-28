@@ -5,31 +5,35 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter as FacadeRateLimiter;
 use Symfony\Component\HttpFoundation\Response;
 
 class RateLimitMiddleware
 {
-    public function handle(Request $request, Closure $next, int $maxAttempts = 5, int $decayMinutes = 1): Response
-    {
-        $key = strtolower($request->method()) . '|' . $request->ip() . '|' . $request->path();
+    public function __construct(
+        protected RateLimiter $limiter
+    ) {}
 
-        if (FacadeRateLimiter::tooManyAttempts($key, $maxAttempts)) {
-            $seconds = FacadeRateLimiter::availableIn($key);
+    public function handle(Request $request, Closure $next, string $key = 'default', int $maxAttempts = 60, int $decayMinutes = 1): Response
+    {
+        $ip = $request->ip();
+        $userId = $request->user()?->id;
+        $rateKey = $userId ? "{$key}:user:{$userId}" : "{$key}:ip:{$ip}";
+
+        if ($this->limiter->tooManyAttempts($rateKey, $maxAttempts)) {
+            $seconds = $this->limiter->availableIn($rateKey);
+
             return response()->json([
-                'message' => 'Demasiados intentos. Por favor, espera ' . $seconds . ' segundos antes de intentar de nuevo.',
+                'message' => 'Demasiadas solicitudes. Intenta de nuevo en ' . $seconds . ' segundos.',
+                'retry_after' => $seconds,
             ], 429);
         }
 
-        FacadeRateLimiter::hit($key, $decayMinutes * 60);
+        $this->limiter->hit($rateKey, $decayMinutes * 60);
 
         $response = $next($request);
 
-        // On successful login, clear the rate limiter
-        if ($request->path() === 'login' && $request->isMethod('POST') && $response->getStatusCode() === 302) {
-            // Check if it's a successful login (redirect without errors)
-            FacadeRateLimiter::clear($key);
-        }
+        $response->headers->set('X-RateLimit-Limit', $maxAttempts);
+        $response->headers->set('X-RateLimit-Remaining', max(0, $this->limiter->remaining($rateKey, $maxAttempts)));
 
         return $response;
     }

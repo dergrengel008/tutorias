@@ -3,52 +3,44 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use App\Models\User;
+use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
-    public function uploadAvatar(Request $request)
+    public function show()
     {
-        $request->validate([
-            'avatar' => 'required|image|max:2048',
+        $user = auth()->user()->load(['tutorProfile.specialties', 'studentProfile']);
+
+        return Inertia::render('Profile/Show', [
+            'user' => $user,
         ]);
-
-        $user = Auth::user();
-
-        if ($user->avatar) {
-            $oldAvatar = str_replace(Storage::url(''), '', $user->avatar);
-            Storage::delete($oldAvatar);
-        }
-
-        $path = $request->file('avatar')->store('avatars', 'public');
-
-        $user->update([
-            'avatar' => $path,
-        ]);
-
-        return back()->with('success', 'Foto de perfil actualizada.');
     }
 
-    public function changePassword(Request $request)
+    public function update(Request $request)
     {
-        $request->validate([
-            'current_password' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name'  => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'bio'   => ['nullable', 'string', 'max:1000'],
+            'city'  => ['nullable', 'string', 'max:100'],
+            'country' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $user = Auth::user();
+        $user->update($validated);
 
-        if (!Hash::check($request->current_password, $user->password)) {
-            return back()->withErrors(['current_password' => 'La contraseña actual no es correcta.']);
+        if ($request->hasFile('avatar')) {
+            $request->validate(['avatar' => ['image', 'max:2048']]);
+            if ($user->getRawOriginal('avatar')) {
+                Storage::disk('public')->delete($user->getRawOriginal('avatar'));
+            }
+            $user->update([
+                'avatar' => $request->file('avatar')->store('avatars', 'public'),
+            ]);
         }
 
-        $user->update([
-            'password' => Hash::make($request->password),
-        ]);
-
-        return back()->with('success', 'Contraseña actualizada correctamente.');
+        return redirect()->back()->with('success', 'Perfil actualizado correctamente.');
     }
 }
