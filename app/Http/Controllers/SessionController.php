@@ -172,7 +172,7 @@ class SessionController extends Controller
 
         $endedAt = now();
         $startedAt = $session->started_at;
-        $durationMinutes = $startedAt ? $startedAt->diffInMinutes($endedAt) : $session->duration_minutes;
+        $durationMinutes = $startedAt ? (int) $startedAt->diffInMinutes($endedAt) : (int) $session->duration_minutes;
 
         $session->update([
             'status'          => 'completed',
