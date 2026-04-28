@@ -221,7 +221,7 @@ class SessionController extends Controller
 
         event(new SessionCompleted($session, $session->tutor_earned_tokens));
 
-        return redirect()->route('tutor.sessions')
+        return redirect()->route('tutor.sessions.index')
             ->with('success', 'Sesión finalizada exitosamente. Tokens ganados: ' . $session->tutor_earned_tokens);
     }
 
