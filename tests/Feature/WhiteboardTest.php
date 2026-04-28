@@ -20,7 +20,7 @@ class WhiteboardTest extends TestCase
         $this->seed();
     }
 
-    protected function createSession(): TutoringSession
+    protected function createSession(array $overrides = []): TutoringSession
     {
         $tutorUser = User::factory()->create(['role' => 'tutor']);
         $tutorProfile = TutorProfile::factory()->approved()->create(['user_id' => $tutorUser->id]);
@@ -32,14 +32,14 @@ class WhiteboardTest extends TestCase
             'education_level' => 'Universitario',
         ]);
 
-        return TutoringSession::create([
+        return TutoringSession::create(array_merge([
             'tutor_profile_id' => $tutorProfile->id,
             'student_user_id' => $studentUser->id,
             'title' => 'Sesión de prueba',
             'scheduled_at' => now()->addDay(),
             'status' => 'scheduled',
             'tokens_cost' => 5,
-        ]);
+        ], $overrides));
     }
 
     public function test_tutor_can_get_whiteboard(): void
@@ -48,10 +48,10 @@ class WhiteboardTest extends TestCase
         $tutor = $session->tutorProfile->user;
 
         $response = $this->actingAs($tutor)
-            ->getJson("/api/sessions/{$session->id}/whiteboard");
+            ->getJson("/api/whiteboard/{$session->id}");
 
         $response->assertStatus(200);
-        $response->assertJsonStructure(['data', 'specialty', 'type']);
+        $response->assertJsonStructure(['whiteboard_data', 'session']);
     }
 
     public function test_student_can_get_whiteboard(): void
@@ -60,7 +60,7 @@ class WhiteboardTest extends TestCase
         $student = $session->student;
 
         $response = $this->actingAs($student)
-            ->getJson("/api/sessions/{$session->id}/whiteboard");
+            ->getJson("/api/whiteboard/{$session->id}");
 
         $response->assertStatus(200);
     }
@@ -71,7 +71,7 @@ class WhiteboardTest extends TestCase
         $outsider = User::factory()->create(['role' => 'student']);
 
         $response = $this->actingAs($outsider)
-            ->getJson("/api/sessions/{$session->id}/whiteboard");
+            ->getJson("/api/whiteboard/{$session->id}");
 
         $response->assertStatus(403);
     }
@@ -80,39 +80,43 @@ class WhiteboardTest extends TestCase
     {
         $session = $this->createSession();
 
-        $response = $this->getJson("/api/sessions/{$session->id}/whiteboard");
+        $response = $this->getJson("/api/whiteboard/{$session->id}");
         $response->assertStatus(401);
     }
 
     public function test_tutor_can_save_whiteboard(): void
     {
-        $session = $this->createSession();
+        $session = $this->createSession([
+            'status' => 'in_progress',
+            'started_at' => now(),
+        ]);
         $tutor = $session->tutorProfile->user;
 
         $response = $this->actingAs($tutor)
-            ->putJson("/api/sessions/{$session->id}/whiteboard", [
-                'data' => json_encode(['elements' => [], 'appState' => []]),
-                'specialty' => 'Programación',
+            ->postJson("/api/whiteboard/{$session->id}", [
+                'whiteboard_data' => json_encode(['elements' => [], 'appState' => []]),
             ]);
 
         $response->assertStatus(200);
-        $response->assertJson(['message' => 'Pizarra guardada exitosamente.']);
+        $response->assertJson(['message' => 'Pizarra guardada.']);
     }
 
     public function test_math_specialty_uses_math_whiteboard_type(): void
     {
-        $session = $this->createSession();
+        $session = $this->createSession([
+            'status' => 'in_progress',
+            'started_at' => now(),
+        ]);
         $tutor = $session->tutorProfile->user;
 
         $response = $this->actingAs($tutor)
-            ->putJson("/api/sessions/{$session->id}/whiteboard", [
-                'data' => '{"shapes": []}',
+            ->postJson("/api/whiteboard/{$session->id}", [
+                'whiteboard_data' => json_encode(['shapes' => []]),
                 'specialty' => 'Matemáticas',
             ]);
 
         $response->assertStatus(200);
 
-        // Verify the type was set correctly
         $this->assertDatabaseHas('tutoring_sessions', [
             'id' => $session->id,
             'whiteboard_type' => 'math_latex',
@@ -121,12 +125,15 @@ class WhiteboardTest extends TestCase
 
     public function test_non_math_specialty_uses_excalidraw(): void
     {
-        $session = $this->createSession();
+        $session = $this->createSession([
+            'status' => 'in_progress',
+            'started_at' => now(),
+        ]);
         $tutor = $session->tutorProfile->user;
 
         $response = $this->actingAs($tutor)
-            ->putJson("/api/sessions/{$session->id}/whiteboard", [
-                'data' => '{"elements": []}',
+            ->postJson("/api/whiteboard/{$session->id}", [
+                'whiteboard_data' => json_encode(['elements' => []]),
                 'specialty' => 'Física',
             ]);
 

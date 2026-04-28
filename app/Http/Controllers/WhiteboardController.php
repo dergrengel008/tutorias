@@ -77,6 +77,7 @@ class WhiteboardController extends Controller
 
         $validated = $request->validate([
             'whiteboard_data' => 'required|string',
+            'specialty'       => 'nullable|string|max:255',
         ]);
 
         // Decode the JSON string and store it (model casts it back to array)
@@ -86,9 +87,25 @@ class WhiteboardController extends Controller
             return response()->json(['error' => 'Datos de pizarra inválidos.'], 422);
         }
 
-        $session->update([
+        $updateData = [
             'whiteboard_data' => $decoded,
-        ]);
+        ];
+
+        // Set whiteboard_type based on specialty when provided
+        if (! empty($validated['specialty'])) {
+            $mathKeywords = ['matemátic', 'math', 'álgebra', 'cálculo', 'geometría', 'trigonometría', 'estadística'];
+            $specialtyLower = mb_strtolower($validated['specialty']);
+            $isMath = false;
+            foreach ($mathKeywords as $keyword) {
+                if (str_contains($specialtyLower, $keyword)) {
+                    $isMath = true;
+                    break;
+                }
+            }
+            $updateData['whiteboard_type'] = $isMath ? 'math_latex' : 'excalidraw';
+        }
+
+        $session->update($updateData);
 
         return response()->json([
             'message' => 'Pizarra guardada.',
