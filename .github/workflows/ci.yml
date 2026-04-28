@@ -109,10 +109,16 @@ jobs:
     needs: [php-tests, frontend-tests]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
 
     steps:
       - name: Trigger Render Deploy
+        if: env.RENDER_DEPLOY_HOOK != ''
         run: |
           curl -s -o /dev/null -w "%{http_code}" "$RENDER_DEPLOY_HOOK"
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+
+      - name: Deploy skipped
+        if: env.RENDER_DEPLOY_HOOK == ''
+        run: echo "RENDER_DEPLOY_HOOK not configured — deploy skipped"
