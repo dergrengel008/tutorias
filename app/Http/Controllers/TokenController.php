@@ -119,7 +119,7 @@ class TokenController extends Controller
      */
     public function getBalance()
     {
-        $latestToken = Token::where('user_id', Auth::id())->latest()->first();
+        $latestToken = Token::where('user_id', Auth::id())->latest('id')->first();
         $balance = $latestToken ? $latestToken->tokens_after : 0;
         return response()->json(['balance' => $balance]);
     }
