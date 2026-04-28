@@ -2,11 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Withdrawal extends Model
 {
+    use HasFactory;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'tutor_profile_id',
         'amount',
@@ -19,10 +27,19 @@ class Withdrawal extends Model
         'reviewed_at',
     ];
 
-    protected $casts = [
-        'dollar_amount' => 'decimal:2',
-        'reviewed_at' => 'datetime',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'dollar_amount' => 'decimal:2',
+            'amount'        => 'integer',
+            'reviewed_at'   => 'datetime',
+        ];
+    }
 
     // ─── Relationships ───────────────────────────────────────────────
 
@@ -31,7 +48,7 @@ class Withdrawal extends Model
         return $this->belongsTo(TutorProfile::class);
     }
 
-    public function reviewer(): BelongsTo
+    public function reviewedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
     }
@@ -51,27 +68,5 @@ class Withdrawal extends Model
     public function scopeRejected($query)
     {
         return $query->where('status', 'rejected');
-    }
-
-    public function scopeCompleted($query)
-    {
-        return $query->where('status', 'completed');
-    }
-
-    // ─── Helpers ─────────────────────────────────────────────────────
-
-    public function isPending(): bool
-    {
-        return $this->status === 'pending';
-    }
-
-    public function isApproved(): bool
-    {
-        return in_array($this->status, ['approved', 'completed']);
-    }
-
-    public function isRejected(): bool
-    {
-        return $this->status === 'rejected';
     }
 }

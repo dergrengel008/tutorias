@@ -15,6 +15,7 @@ use App\Models\Token;
 use App\Models\Review;
 use App\Models\Notification;
 use App\Models\PaymentReceipt;
+use App\Models\Withdrawal;
 use App\Events\TutorApproved;
 
 class AdminController extends Controller
@@ -37,17 +38,22 @@ class AdminController extends Controller
 
             // New analytics metrics
             'avg_session_rating' => round(Review::where('type', 'review')->avg('rating') ?? 0, 1),
-            'most_popular_specialty' => \App\Models\Specialty::withCount(['tutorProfiles as active_tutors' => function($q) {
+
+            // FIX #1: 'tutorProfiles' → 'tutors' (Specialty model has tutors(), not tutorProfiles())
+            'most_popular_specialty' => Specialty::withCount(['tutors as active_tutors' => function ($q) {
                 $q->where('status', 'approved');
             }])->orderByDesc('active_tutors')->first(),
+
+            // FIX #2: orderByDesc usa el alias SQL 'total_earned', no el nombre de atributo Eloquent
             'top_earner' => TutorProfile::approved()
                 ->select('id', 'user_id')
-                ->withSum(['tokens as total_earned' => function($q) {
+                ->withSum(['tokens as total_earned' => function ($q) {
                     $q->where('transaction_type', 'session_payment');
                 }], 'quantity')
                 ->with('user:id,name')
-                ->orderByDesc('tokens_total_earned_sum_quantity')
+                ->orderByDesc('total_earned')
                 ->first(),
+
             'active_sessions_this_week' => TutoringSession::whereBetween('scheduled_at', [
                 now()->startOfWeek(), now()->endOfWeek()
             ])->whereIn('status', ['scheduled', 'in_progress'])->count(),
@@ -55,11 +61,14 @@ class AdminController extends Controller
                 ? round(TutoringSession::where('status', 'completed')->count() /
                     TutoringSession::whereIn('status', ['completed', 'cancelled'])->count() * 100, 1)
                 : 0,
+
+            // FIX #3: Withdrawal model created — import added at top of file
             'token_economy' => [
                 'total_tokens_purchased' => Token::whereIn('transaction_type', ['purchase', 'admin_credit'])->sum('quantity'),
                 'total_tokens_spent' => Token::whereIn('transaction_type', ['session_payment', 'thesis_review'])->sum('quantity'),
-                'pending_withdrawals' => \App\Models\Withdrawal::where('status', 'pending')->sum('amount'),
+                'pending_withdrawals' => Withdrawal::where('status', 'pending')->sum('amount'),
             ],
+
             'weekly_new_users' => User::whereBetween('created_at', [
                 now()->startOfWeek(), now()->endOfWeek()
             ])->count(),
@@ -203,7 +212,7 @@ class AdminController extends Controller
     public function suspendTutor($id)
     {
         $tutor = TutorProfile::findOrFail($id);
-        
+
         DB::transaction(function () use ($tutor) {
             $tutor->update(['status' => 'suspended']);
             $tutor->user->update(['is_active' => false]);

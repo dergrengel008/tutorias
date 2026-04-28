@@ -13,6 +13,11 @@ class TutorProfile extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'user_id',
         'professional_title',
@@ -31,17 +36,33 @@ class TutorProfile extends Model
         'total_warnings',
     ];
 
+    /**
+     * Default values for attributes.
+     * Ensures 'status' is 'pending' at Eloquent level even if DB default doesn't fire.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'status'     => 'pending',
+        'is_approved' => false,
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
     protected $hidden = [
         'id_card_image',
         'title_document',
         'selfie_image',
     ];
 
-    protected $attributes = [
-        'status' => 'pending',
-        'is_approved' => false,
-    ];
-
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -52,6 +73,8 @@ class TutorProfile extends Model
             'status' => 'string',
         ];
     }
+
+    // ─── Relationships ───────────────────────────────────────────────
 
     public function user(): BelongsTo
     {
@@ -79,16 +102,23 @@ class TutorProfile extends Model
         return $this->hasMany(Review::class);
     }
 
+    /**
+     * Tokens related to this tutor profile (via user_id).
+     * Used by AdminController dashboard for withSum('tokens', 'quantity').
+     */
     public function tokens(): HasMany
     {
         return $this->hasMany(Token::class, 'user_id', 'user_id');
     }
+
+    // ─── Accessors ───────────────────────────────────────────────────
 
     public function getIdCardImageUrlAttribute(): ?string
     {
         if ($this->id_card_image) {
             return Storage::url($this->id_card_image);
         }
+
         return null;
     }
 
@@ -97,6 +127,7 @@ class TutorProfile extends Model
         if ($this->title_document) {
             return Storage::url($this->title_document);
         }
+
         return null;
     }
 
@@ -105,8 +136,11 @@ class TutorProfile extends Model
         if ($this->selfie_image) {
             return Storage::url($this->selfie_image);
         }
+
         return null;
     }
+
+    // ─── Scopes ──────────────────────────────────────────────────────
 
     public function scopeApproved($query)
     {

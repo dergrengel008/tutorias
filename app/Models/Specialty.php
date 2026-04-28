@@ -10,11 +10,18 @@ class Specialty extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'name',
         'description',
         'icon',
     ];
+
+    // ─── Relationships ───────────────────────────────────────────────
 
     public function tutors(): BelongsToMany
     {
@@ -22,9 +29,11 @@ class Specialty extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Alias for tutors() — used by AdminController dashboard analytics.
+     */
     public function tutorProfiles(): BelongsToMany
     {
-        return $this->belongsToMany(TutorProfile::class, 'tutor_specialty')
-            ->withTimestamps();
+        return $this->tutors();
     }
 }
