@@ -14,11 +14,13 @@ class ThesisReview extends Model
         'student_user_id',
         'tutor_profile_id',
         'title',
+        'academic_level',
         'description',
         'file_path',
         'status',
         'tutor_feedback',
         'rating',
+        'tokens_cost',
         'reviewed_at',
     ];
 
