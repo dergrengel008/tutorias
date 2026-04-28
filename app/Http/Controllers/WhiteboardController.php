@@ -4,88 +4,163 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 use App\Models\TutoringSession;
+use App\Models\SessionMessage;
 
 class WhiteboardController extends Controller
 {
-    /**
-     * Get the whiteboard data for a session.
-     */
     public function show($sessionId)
     {
-        $session = TutoringSession::findOrFail($sessionId);
+        $session = TutoringSession::with([
+            'tutorProfile.user',
+            'student',
+        ])->findOrFail($sessionId);
 
-        // Verify the user is part of this session (tutor or student)
-        $user = Auth::user();
-        $isParticipant = $session->tutor_profile_id === ($user->tutorProfile->id ?? null)
-            || $session->student_user_id === $user->id
-            || $user->isAdmin();
+        $userId = Auth::id();
+        $isTutor = $session->tutorProfile && $session->tutorProfile->user_id === $userId;
+        $isStudent = $session->student_user_id === $userId;
 
-        if (! $isParticipant) {
-            return response()->json(['message' => 'No autorizado'], 403);
+        if (! $isTutor && ! $isStudent) {
+            abort(403, 'No tienes acceso a esta pizarra.');
         }
 
-        return response()->json([
-            'data' => $session->whiteboard_data,
-            'specialty' => $session->specialty ? $session->specialty->name : null,
-            'type' => $session->whiteboard_type ?? 'excalidraw',
+        if ($session->status !== 'in_progress') {
+            return redirect()->route('sessions.show', $sessionId)
+                ->with('info', 'La pizarra solo está disponible cuando la sesión está en curso.');
+        }
+
+        return Inertia::render('Whiteboard/Room', [
+            'session'  => $session,
+            'isTutor'  => $isTutor,
         ]);
     }
 
-    /**
-     * Update whiteboard data for a session.
-     */
+    public function getData($sessionId)
+    {
+        $session = TutoringSession::findOrFail($sessionId);
+
+        $userId = Auth::id();
+        $isTutor = $session->tutorProfile && $session->tutorProfile->user_id === $userId;
+        $isStudent = $session->student_user_id === $userId;
+
+        if (! $isTutor && ! $isStudent) {
+            abort(403);
+        }
+
+        return response()->json([
+            'whiteboard_data' => $session->whiteboard_data ?? null,
+            'session'         => [
+                'id'              => $session->id,
+                'title'           => $session->title,
+                'status'          => $session->status,
+                'started_at'      => $session->started_at,
+            ],
+        ]);
+    }
+
     public function update(Request $request, $sessionId)
     {
         $session = TutoringSession::findOrFail($sessionId);
 
-        $user = Auth::user();
-        $isTutor = $session->tutor_profile_id === ($user->tutorProfile->id ?? null);
-        $isStudent = $session->student_user_id === $user->id;
-        $isAdmin = $user->isAdmin();
+        $userId = Auth::id();
+        $isTutor = $session->tutorProfile && $session->tutorProfile->user_id === $userId;
+        $isStudent = $session->student_user_id === $userId;
 
-        if (! $isTutor && ! $isStudent && ! $isAdmin) {
-            return response()->json(['message' => 'No autorizado'], 403);
+        if (! $isTutor && ! $isStudent) {
+            abort(403);
+        }
+
+        if ($session->status !== 'in_progress') {
+            return response()->json(['error' => 'La sesión no está en curso.'], 400);
         }
 
         $validated = $request->validate([
-            'data'      => 'required',
-            'specialty' => 'nullable|string|max:255',
+            'whiteboard_data' => 'required|string',
         ]);
 
-        // Use direct property assignment to bypass $fillable restrictions
-        $session->whiteboard_data = $validated['data'];
-        $session->whiteboard_type = $this->detectWhiteboardType($validated['specialty'] ?? null);
-        $session->save();
+        // Decode the JSON string and store it (model casts it back to array)
+        $decoded = json_decode($validated['whiteboard_data'], true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return response()->json(['error' => 'Datos de pizarra inválidos.'], 422);
+        }
+
+        $session->update([
+            'whiteboard_data' => $decoded,
+        ]);
 
         return response()->json([
-            'message' => 'Pizarra guardada exitosamente.',
+            'message' => 'Pizarra guardada.',
         ]);
     }
 
-    /**
-     * Determine the whiteboard type based on the specialty.
-     */
-    private function detectWhiteboardType(?string $specialty): string
+    // ─── Chat Endpoints ───────────────────────────────────────────────
+
+    public function getChat($sessionId)
     {
-        if (! $specialty) {
-            return 'excalidraw';
+        $session = TutoringSession::findOrFail($sessionId);
+
+        $userId = Auth::id();
+        $isTutor = $session->tutorProfile && $session->tutorProfile->user_id === $userId;
+        $isStudent = $session->student_user_id === $userId;
+
+        if (! $isTutor && ! $isStudent) {
+            abort(403);
         }
 
-        $mathSpecialties = [
-            'matemáticas', 'matematicas', 'math', 'álgebra', 'algebra',
-            'calculo', 'cálculo', 'estadística', 'estadistica',
-            'trigonometria', 'geometria',
-        ];
+        $messages = $session->messages()
+            ->with('user:id,name')
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->map(fn ($msg) => [
+                'id'          => $msg->id,
+                'user_name'   => $msg->user->name ?? 'Usuario',
+                'message'     => $msg->message,
+                'created_at'  => $msg->created_at->toIso8601String(),
+                'is_tutor'    => $msg->user_id === ($session->tutorProfile->user_id ?? null),
+            ]);
 
-        $lower = strtolower(trim($specialty));
+        return response()->json([
+            'messages' => $messages,
+        ]);
+    }
 
-        foreach ($mathSpecialties as $math) {
-            if (str_contains($lower, $math)) {
-                return 'math_latex';
-            }
+    public function sendChat(Request $request, $sessionId)
+    {
+        $session = TutoringSession::findOrFail($sessionId);
+
+        $userId = Auth::id();
+        $isTutor = $session->tutorProfile && $session->tutorProfile->user_id === $userId;
+        $isStudent = $session->student_user_id === $userId;
+
+        if (! $isTutor && ! $isStudent) {
+            abort(403);
         }
 
-        return 'excalidraw';
+        if ($session->status !== 'in_progress') {
+            return response()->json(['error' => 'La sesión no está en curso.'], 400);
+        }
+
+        $validated = $request->validate([
+            'message' => 'required|string|max:1000',
+        ]);
+
+        $msg = $session->messages()->create([
+            'user_id' => $userId,
+            'message' => $validated['message'],
+            'type'    => 'whiteboard_chat',
+        ]);
+
+        return response()->json([
+            'message' => 'Mensaje enviado.',
+            'data'    => [
+                'id'          => $msg->id,
+                'user_name'   => Auth::user()->name,
+                'message'     => $msg->message,
+                'created_at'  => $msg->created_at->toIso8601String(),
+                'is_tutor'    => $isTutor,
+            ],
+        ]);
     }
 }
