@@ -49,14 +49,14 @@ class WhiteboardController extends Controller
         }
 
         $validated = $request->validate([
-            'data'      => 'required|nullable',
+            'data'      => 'required',
             'specialty' => 'nullable|string|max:255',
         ]);
 
-        $session->update([
-            'whiteboard_data' => $validated['data'],
-            'whiteboard_type' => $this->detectWhiteboardType($validated['specialty']),
-        ]);
+        // Use direct property assignment to bypass $fillable restrictions
+        $session->whiteboard_data = $validated['data'];
+        $session->whiteboard_type = $this->detectWhiteboardType($validated['specialty'] ?? null);
+        $session->save();
 
         return response()->json([
             'message' => 'Pizarra guardada exitosamente.',
@@ -68,12 +68,20 @@ class WhiteboardController extends Controller
      */
     private function detectWhiteboardType(?string $specialty): string
     {
-        if (! $specialty) return 'excalidraw';
+        if (! $specialty) {
+            return 'excalidraw';
+        }
 
-        $mathSpecialties = ['matemáticas', 'matematicas', 'math', 'álgebra', 'calculo', 'estadística'];
+        $mathSpecialties = [
+            'matemáticas', 'matematicas', 'math', 'álgebra', 'algebra',
+            'calculo', 'cálculo', 'estadística', 'estadistica',
+            'trigonometria', 'geometria', 'fisica', 'física',
+        ];
+
+        $lower = strtolower(trim($specialty));
 
         foreach ($mathSpecialties as $math) {
-            if (str_contains(strtolower($specialty), $math)) {
+            if (str_contains($lower, $math)) {
                 return 'math_latex';
             }
         }

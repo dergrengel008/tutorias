@@ -10,7 +10,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/tokens/balance', function (Request $request) {
         $latestToken = \App\Models\Token::where('user_id', $request->user()->id)
-            ->latest()->first();
+            ->latest('id')->first();
         return response()->json([
             'balance' => $latestToken ? $latestToken->tokens_after : 0,
         ]);
