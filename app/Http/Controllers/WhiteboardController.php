@@ -75,7 +75,7 @@ class WhiteboardController extends Controller
         $mathSpecialties = [
             'matemáticas', 'matematicas', 'math', 'álgebra', 'algebra',
             'calculo', 'cálculo', 'estadística', 'estadistica',
-            'trigonometria', 'geometria', 'fisica', 'física',
+            'trigonometria', 'geometria',
         ];
 
         $lower = strtolower(trim($specialty));
