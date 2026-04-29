@@ -23,6 +23,23 @@ Route::get('/search', [SearchController::class, 'search'])->name('search');
 Route::get('/tutors', [SearchController::class, 'search'])->name('tutors.index');
 Route::get('/tutors/{id}', [StudentController::class, 'viewTutor'])->name('tutors.show');
 
+// Catch-all /sessions redirect (public, for post-logout navigation)
+Route::get('/sessions', function () {
+    if (auth()->check()) {
+        $role = auth()->user()->role;
+        if ($role === 'admin') {
+            return redirect()->route('admin.sessions.index');
+        }
+        if ($role === 'tutor') {
+            return redirect()->route('tutor.sessions.index');
+        }
+        if ($role === 'student') {
+            return redirect()->route('student.sessions');
+        }
+    }
+    return redirect('/');
+})->name('sessions.redirect');
+
 // Password reset (public, guest)
 Route::middleware(['guest', 'throttle:3,1'])->group(function () {
     Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotForm'])->name('password.request');
@@ -136,5 +153,3 @@ Route::withoutMiddleware([HandleInertiaRequests::class])
         Route::get('/{sessionId}/chat', [WhiteboardController::class, 'getChat']);
         Route::post('/{sessionId}/chat', [WhiteboardController::class, 'sendChat']);
     });
-
-

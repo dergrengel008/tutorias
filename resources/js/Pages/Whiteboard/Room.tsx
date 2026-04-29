@@ -389,6 +389,15 @@ export default function WhiteboardRoom({ session, isTutor }: PageProps) {
         }
     };
 
+    // Exit whiteboard — redirect based on role
+    const handleExit = () => {
+        if (isTutor) {
+            router.visit('/tutor/sessions');
+        } else {
+            router.visit('/student/sessions');
+        }
+    };
+
     const otherPerson = isTutor ? session.student?.name : session.tutor_profile?.user?.name;
 
     return (
@@ -471,14 +480,15 @@ export default function WhiteboardRoom({ session, isTutor }: PageProps) {
                         </button>
                     )}
 
-                    {/* Exit */}
-                    <a
-                        href="/sessions"
-                        className="flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                    {/* Exit — redirects by role (tutor → /tutor/sessions, student → /student/sessions) */}
+                    <button
+                        onClick={handleExit}
+                        type="button"
+                        className="flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors text-white cursor-pointer"
                     >
                         <X className="h-3.5 w-3.5" />
                         <span className="hidden sm:inline">Salir</span>
-                    </a>
+                    </button>
                 </div>
             </div>
 

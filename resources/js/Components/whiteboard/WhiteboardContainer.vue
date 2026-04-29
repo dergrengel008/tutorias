@@ -80,9 +80,9 @@ function onCanvasChange(data) {
 
 async function loadCanvasData() {
   try {
-    const response = await axios.get(`/api/sessions/${props.sessionId}/whiteboard`);
-    if (response.data && response.data.data) {
-      canvasData.value = response.data.data;
+    const response = await axios.get(`/api/whiteboard/${props.sessionId}`);
+    if (response.data && response.data.whiteboard_data) {
+      canvasData.value = response.data.whiteboard_data;
     }
   } catch (error) {
     // No data yet — start fresh
@@ -94,8 +94,8 @@ async function saveCanvasData() {
   if (!hasUnsavedChanges.value || !canvasData.value || props.isReadOnly) return;
 
   try {
-    await axios.put(`/api/sessions/${props.sessionId}/whiteboard`, {
-      data: canvasData.value,
+    await axios.post(`/api/whiteboard/${props.sessionId}`, {
+      whiteboard_data: JSON.stringify(canvasData.value),
       specialty: props.specialtyName,
     });
     hasUnsavedChanges.value = false;
